@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    {% load static%}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{% static 'css/homepage.css' %}">
+    <title>Feedback Inatel</title>
+</head>
+<body>
+    
+    <div class="header">
+        <p class="logo"><em>Inatel</em></p>
+
+        <div class="links">
+            <a href="{% url 'atividade' %}">Atividades</a>
+            <a href="{% url 'notas' %}">Notas</a>
+            <a href="{% url 'disciplinas' %}">Disciplinas</a>
+            <a href="{% url 'perfil' %}">Perfil</a>
+        </div>
+        
+    </div>
+    
+</body>
+</html>

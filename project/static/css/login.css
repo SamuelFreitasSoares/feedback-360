@@ -1,0 +1,62 @@
+body {
+    background: url(https://moodle.inatel.br/pluginfile.php/1/theme_alpha/loginbg/1712369813/bginatel.webp);
+    background-size: cover;
+}
+
+.main{
+    background-color: white;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-evenly;
+    align-items: center;
+    width: 350px;
+    height: 350px;
+    padding: 40px;
+    border-radius: 9px;
+    gap: 20px;
+}
+
+.container {
+    display: flex;
+    justify-content: center;
+    padding-top: 150px;
+}
+
+.dados{
+    display: flex;
+    flex-direction: column;
+    gap: 5px
+}
+
+.email, .senha{
+    padding: 5px;
+    height: 30px;
+    width: 300px;
+    border-radius: 8px;
+    border: 1px solid lightblue
+}
+
+.login{
+    color: white;
+    font-size: large;
+    font-weight: bold;
+    border-radius: 8px;
+    border: 0px solid white;
+    min-width: 305px;
+    min-height: 48px;
+    background: linear-gradient(90deg, #325ebf 0%, #19a0d7 95%);
+    margin-bottom: 20px;
+}
+
+.login:hover{
+    cursor: pointer;
+    background: linear-gradient(90deg, #19a0d7 100%, #325ebf 0%);
+}
+
+.recovery{
+    padding-top: 5px;
+    font-family:Arial, Helvetica, sans-serif;
+    text-align: end;
+    text-decoration: none;
+    color: grey;
+}
