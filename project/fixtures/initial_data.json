@@ -1,0 +1,79 @@
+[
+  {
+    "model": "project.competencia",
+    "pk": 1,
+    "fields": {
+      "nome": "Pontualidade",
+      "descricao": "Capacidade de entregar atividades no prazo e comparecer a reuniões no horário combinado."
+    }
+  },
+  {
+    "model": "project.competencia",
+    "pk": 2,
+    "fields": {
+      "nome": "Assertividade",
+      "descricao": "Capacidade de se comunicar de forma clara, objetiva e respeitosa, expressando suas ideias e opiniões com confiança."
+    }
+  },
+  {
+    "model": "project.competencia",
+    "pk": 3,
+    "fields": {
+      "nome": "Liderança",
+      "descricao": "Capacidade de motivar e influenciar positivamente outras pessoas, orientando e conduzindo o grupo para alcançar objetivos comuns."
+    }
+  },
+  {
+    "model": "project.competencia",
+    "pk": 4,
+    "fields": {
+      "nome": "Trabalho em Equipe",
+      "descricao": "Habilidade de colaborar com os colegas, contribuindo para um ambiente de trabalho positivo e produtivo."
+    }
+  },
+  {
+    "model": "project.competencia",
+    "pk": 5,
+    "fields": {
+      "nome": "Resolução de Problemas",
+      "descricao": "Capacidade de identificar, analisar e resolver problemas de forma eficaz e criativa."
+    }
+  },
+  {
+    "model": "project.semestre",
+    "pk": 1,
+    "fields": {
+      "ano": 2024,
+      "periodo": 1
+    }
+  },
+  {
+    "model": "project.semestre",
+    "pk": 2,
+    "fields": {
+      "ano": 2024,
+      "periodo": 2
+    }
+  },
+  {
+    "model": "project.curso",
+    "pk": 1,
+    "fields": {
+      "nome": "Engenharia de Software"
+    }
+  },
+  {
+    "model": "project.curso",
+    "pk": 2,
+    "fields": {
+      "nome": "Ciência da Computação"
+    }
+  },
+  {
+    "model": "project.curso",
+    "pk": 3,
+    "fields": {
+      "nome": "Engenharia de Computação"
+    }
+  }
+]

@@ -1,25 +1,124 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-br">
 <head>
-    {% load static%}
+    {% load static %}
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="{% static 'css/homepage.css' %}">
-    <title>Feedback Inatel</title>
+    <title>Perfil - Feedback 360°</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{% static 'css/main.css' %}">
 </head>
 <body>
-    
     <div class="header">
         <p class="logo"><em>Inatel</em></p>
 
         <div class="links">
-            <a href="{% url 'atividade' %}">Atividades</a>
+            <a href="{% url 'home' %}">Home</a>
+            <a href="{% url 'atividades' %}">Atividades</a>
             <a href="{% url 'notas' %}">Notas</a>
             <a href="{% url 'disciplinas' %}">Disciplinas</a>
-            <a href="{% url 'perfil' %}">Perfil</a>
+            <a href="{% url 'perfil' %}" class="active">Perfil</a>
+            <a href="{% url 'logout' %}">Sair</a>
         </div>
-        
     </div>
     
+    <div class="container mt-4">
+        <h1>Meu Perfil</h1>
+        
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+        
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h4>Informações Pessoais</h4>
+                    </div>
+                    <div class="card-body">
+                        <table class="table">
+                            <tbody>
+                                {% if user_type == 'aluno' %}
+                                    <tr>
+                                        <th>Nome:</th>
+                                        <td>{{ user_data.nomeAluno }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Email:</th>
+                                        <td>{{ user_data.emailAluno }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Matrícula:</th>
+                                        <td>{{ user_data.matricula }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Curso:</th>
+                                        <td>{{ user_data.curso.nome }}</td>
+                                    </tr>
+                                {% elif user_type == 'professor' %}
+                                    <tr>
+                                        <th>Nome:</th>
+                                        <td>{{ user_data.nomeProf }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Email:</th>
+                                        <td>{{ user_data.emailProf }}</td>
+                                    </tr>
+                                {% elif user_type == 'coordenador' %}
+                                    <tr>
+                                        <th>Nome:</th>
+                                        <td>{{ user_data.nomeCoord }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Email:</th>
+                                        <td>{{ user_data.emailCoord }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Curso:</th>
+                                        <td>{{ user_data.curso.nome }}</td>
+                                    </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h4>Alterar Senha</h4>
+                    </div>
+                    <div class="card-body">
+                        <form method="post">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="change_password">
+                            
+                            <div class="form-group">
+                                <label for="current_password">Senha Atual</label>
+                                <input type="password" class="form-control" id="current_password" name="current_password" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="new_password">Nova Senha</label>
+                                <input type="password" class="form-control" id="new_password" name="new_password" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="confirm_password">Confirmar Nova Senha</label>
+                                <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-primary">Alterar Senha</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

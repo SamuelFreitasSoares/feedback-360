@@ -1,25 +1,250 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-br">
 <head>
-    {% load static%}
+    {% load static %}
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="{% static 'css/homepage.css' %}">
-    <title>Feedback Inatel</title>
+    <title>Notas - Feedback 360°</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{% static 'css/main.css' %}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-    
     <div class="header">
         <p class="logo"><em>Inatel</em></p>
 
         <div class="links">
-            <a href="{% url 'atividade' %}">Atividades</a>
-            <a href="{% url 'notas' %}">Notas</a>
+            <a href="{% url 'home' %}">Home</a>
+            <a href="{% url 'atividades' %}">Atividades</a>
+            <a href="{% url 'notas' %}" class="active">Notas</a>
             <a href="{% url 'disciplinas' %}">Disciplinas</a>
             <a href="{% url 'perfil' %}">Perfil</a>
+            <a href="{% url 'logout' %}">Sair</a>
         </div>
-        
     </div>
     
+    <div class="container mt-4">
+        <h1>Minhas Notas</h1>
+        
+        {% if user_type == 'aluno' %}
+            {% if notas %}
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h4>Evolução por Competência</h4>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="lineChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h4>Visão Geral por Competência</h4>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="radarChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <h4>Todas as Avaliações</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Disciplina</th>
+                                        <th>Atividade</th>
+                                        <th>Competência</th>
+                                        <th>Nota</th>
+                                        <th>Data</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for nota in notas %}
+                                        <tr>
+                                            <td>{{ nota.avaliacao.atividade.turma.disciplina.nome }}</td>
+                                            <td>{{ nota.avaliacao.atividade.titulo }}</td>
+                                            <td>{{ nota.competencia.nome }}</td>
+                                            <td>{{ nota.nota }}/5</td>
+                                            <td>{{ nota.dataAvaliacao|date:"d/m/Y" }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
+                <script>
+                    // Line Chart for evolution over time
+                    const chartData = JSON.parse('{{ chart_data|safe|escapejs }}');
+                    const colors = [
+                        'rgba(255, 99, 132, 0.7)',
+                        'rgba(54, 162, 235, 0.7)',
+                        'rgba(255, 206, 86, 0.7)',
+                        'rgba(75, 192, 192, 0.7)',
+                        'rgba(153, 102, 255, 0.7)'
+                    ];
+                    
+                    const datasets = [];
+                    let i = 0;
+                    
+                    for (const [competencia, data] of Object.entries(chartData)) {
+                        datasets.push({
+                            label: competencia,
+                            data: data.data,
+                            borderColor: colors[i % colors.length],
+                            backgroundColor: colors[i % colors.length].replace('0.7', '0.1'),
+                            tension: 0.1
+                        });
+                        i++;
+                    }
+                    
+                    if (Object.keys(chartData).length > 0) {
+                        const lineChart = new Chart(
+                            document.getElementById('lineChart'),
+                            {
+                                type: 'line',
+                                data: {
+                                    labels: Object.values(chartData)[0].labels,
+                                    datasets: datasets
+                                },
+                                options: {
+                                    scales: {
+                                        y: {
+                                            beginAtZero: true,
+                                            max: 5
+                                        }
+                                    }
+                                }
+                            }
+                        );
+                    }
+                    
+                    // Radar chart for competencies
+                    const radarData = JSON.parse('{{ radar_data|safe|escapejs }}');
+                    
+                    const radarChart = new Chart(
+                        document.getElementById('radarChart'),
+                        {
+                            type: 'radar',
+                            data: {
+                                labels: radarData.labels,
+                                datasets: [{
+                                    label: 'Média por Competência',
+                                    data: radarData.data,
+                                    backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                                    borderColor: 'rgb(54, 162, 235)',
+                                    pointBackgroundColor: 'rgb(54, 162, 235)',
+                                    pointBorderColor: '#fff',
+                                    pointHoverBackgroundColor: '#fff',
+                                    pointHoverBorderColor: 'rgb(54, 162, 235)'
+                                }]
+                            },
+                            options: {
+                                scales: {
+                                    r: {
+                                        beginAtZero: true,
+                                        max: 5
+                                    }
+                                }
+                            }
+                        }
+                    );
+                </script>
+            {% else %}
+                <div class="alert alert-info">
+                    Você ainda não recebeu nenhuma avaliação.
+                </div>
+            {% endif %}
+        {% elif user_type == 'professor' %}
+            <div class="row mb-4">
+                <div class="col">
+                    <h3>Turmas</h3>
+                    <div class="list-group">
+                        {% for turma in turmas %}
+                            <a href="#" class="list-group-item list-group-item-action">
+                                {{ turma.disciplina.nome }} - Turma {{ turma.codigo }} ({{ turma.semestre }})
+                            </a>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            
+            {% if notas %}
+                <h3>Avaliações Recentes</h3>
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Aluno</th>
+                                <th>Disciplina</th>
+                                <th>Atividade</th>
+                                <th>Competência</th>
+                                <th>Nota</th>
+                                <th>Data</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for nota in notas|slice:":20" %}
+                                <tr>
+                                    <td>{{ nota.avaliacao.avaliado_aluno.nomeAluno }}</td>
+                                    <td>{{ nota.avaliacao.atividade.turma.disciplina.nome }}</td>
+                                    <td>{{ nota.avaliacao.atividade.titulo }}</td>
+                                    <td>{{ nota.competencia.nome }}</td>
+                                    <td>{{ nota.nota }}/5</td>
+                                    <td>{{ nota.dataAvaliacao|date:"d/m/Y" }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% endif %}
+        {% elif user_type == 'coordenador' %}
+            <div class="row mb-4">
+                <div class="col">
+                    <h3>Cursos</h3>
+                    <div class="list-group">
+                        {% for curso in cursos %}
+                            <a href="#" class="list-group-item list-group-item-action">
+                                {{ curso.nome }}
+                            </a>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h4>Desempenho por Disciplina</h4>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="barChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h4>Desempenho por Turma</h4>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="pieChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    </div>
 </body>
 </html>

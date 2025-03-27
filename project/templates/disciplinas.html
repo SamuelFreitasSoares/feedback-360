@@ -1,25 +1,56 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-br">
 <head>
-    {% load static%}
+    {% load static %}
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="{% static 'css/homepage.css' %}">
-    <title>Feedback Inatel</title>
+    <title>Disciplinas - Feedback 360°</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{% static 'css/main.css' %}">
 </head>
 <body>
-    
     <div class="header">
         <p class="logo"><em>Inatel</em></p>
 
         <div class="links">
-            <a href="{% url 'atividade' %}">Atividades</a>
+            <a href="{% url 'home' %}">Home</a>
+            <a href="{% url 'atividades' %}">Atividades</a>
             <a href="{% url 'notas' %}">Notas</a>
-            <a href="{% url 'disciplinas' %}">Disciplinas</a>
+            <a href="{% url 'disciplinas' %}" class="active">Disciplinas</a>
             <a href="{% url 'perfil' %}">Perfil</a>
+            <a href="{% url 'logout' %}">Sair</a>
         </div>
-        
     </div>
     
+    <div class="container mt-4">
+        <h1>Disciplinas</h1>
+        
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+        
+        {% if disciplinas %}
+            <div class="row">
+                {% for disciplina in disciplinas|dictsort:"nome" %}
+                    <div class="col-md-4 mb-4">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <h5 class="card-title">{{ disciplina.nome }}</h5>
+                                <h6 class="card-subtitle mb-2 text-muted">{{ disciplina.codigo }}</h6>
+                                <p class="card-text">Curso: {{ disciplina.curso.nome }}</p>
+                                <a href="{% url 'disciplina_detalhe' disciplina.id %}" class="btn btn-info">Ver Detalhes</a>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p>Nenhuma disciplina encontrada.</p>
+        {% endif %}
+    </div>
 </body>
 </html>

@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    {% load static %}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Criar Grupo - Feedback 360°</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{% static 'css/main.css' %}">
+</head>
+<body>
+    <div class="header">
+        <p class="logo"><em>Inatel</em></p>
+
+        <div class="links">
+            <a href="{% url 'home' %}">Home</a>
+            <a href="{% url 'atividades' %}" class="active">Atividades</a>
+            <a href="{% url 'notas' %}">Notas</a>
+            <a href="{% url 'disciplinas' %}">Disciplinas</a>
+            <a href="{% url 'perfil' %}">Perfil</a>
+            <a href="{% url 'logout' %}">Sair</a>
+        </div>
+    </div>
+    
+    <div class="container mt-4">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'atividades' %}">Atividades</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'atividade_detalhe' atividade.id %}">{{ atividade.titulo }}</a></li>
+                <li class="breadcrumb-item active">Criar Grupo</li>
+            </ol>
+        </nav>
+        
+        <div class="card">
+            <div class="card-header">
+                <h2>Criar Novo Grupo</h2>
+                <p class="text-muted">Atividade: {{ atividade.titulo }}</p>
+                <p class="text-muted">Turma: {{ atividade.turma.disciplina.nome }} - {{ atividade.turma.codigo }}</p>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="form-group">
+                        <label for="nome_grupo">Nome do Grupo</label>
+                        <input type="text" class="form-control" id="nome_grupo" name="nome_grupo" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Selecione os Alunos</label>
+                        <div class="alert alert-info">
+                            Apenas alunos que não foram adicionados a grupos nesta atividade são exibidos.
+                        </div>
+                        
+                        {% if alunos_disponiveis %}
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 50px;">Selecionar</th>
+                                            <th>Nome</th>
+                                            <th>Matrícula</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for ta in alunos_disponiveis %}
+                                            <tr>
+                                                <td>
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" name="alunos" value="{{ ta.aluno.idAluno }}" id="aluno_{{ ta.aluno.idAluno }}">
+                                                    </div>
+                                                </td>
+                                                <td>{{ ta.aluno.nomeAluno }}</td>
+                                                <td>{{ ta.aluno.matricula }}</td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <div class="alert alert-warning">
+                                Não há alunos disponíveis para adicionar a novos grupos.
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="form-group">
+                        <button type="submit" class="btn btn-primary btn-lg" {% if not alunos_disponiveis %}disabled{% endif %}>Criar Grupo</button>
+                        <a href="{% url 'atividade_detalhe' atividade.id %}" class="btn btn-secondary btn-lg ml-2">Cancelar</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>

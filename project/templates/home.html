@@ -13,13 +13,88 @@
         <p class="logo"><em>Inatel</em></p>
 
         <div class="links">
-            <a href="{% url 'atividade' %}">Atividades</a>
+            <a href="{% url 'atividades' %}">Atividades</a>
             <a href="{% url 'notas' %}">Notas</a>
             <a href="{% url 'disciplinas' %}">Disciplinas</a>
             <a href="{% url 'perfil' %}">Perfil</a>
+            <a href="{% url 'logout' %}">Sair</a>
         </div>
         
     </div>
     
+    <div class="welcome-container">
+        <h1>Bem-vindo ao Sistema de Feedback 360°</h1>
+        {% if request.session.user_type %}
+            {% if request.session.user_type == "aluno" %}
+                <p>Olá, {{ username }}! Acesse suas notas e atividades através dos links acima.</p>
+                
+                {% if pending_evaluations > 0 %}
+                    <div class="alert alert-warning">
+                        <p>Você tem {{ pending_evaluations }} avaliações pendentes.</p>
+                        <a href="{% url 'atividades' %}" class="btn btn-primary">Ver Avaliações Pendentes</a>
+                    </div>
+                {% endif %}
+                
+                {% if recent_activities %}
+                    <div class="recent-activities">
+                        <h3>Atividades Recentes</h3>
+                        <ul>
+                            {% for atividade in recent_activities %}
+                                <li>
+                                    <a href="{% url 'atividade_detalhe' atividade.id %}">
+                                        {{ atividade.titulo }} - {{ atividade.turma.disciplina.nome }}
+                                    </a>
+                                    <span class="deadline">Entrega: {{ atividade.dataEntrega }}</span>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                {% endif %}
+            {% elif request.session.user_type == "professor" %}
+                <p>Olá, Professor(a) {{ username }}! Gerencie suas turmas e avaliações através dos links acima.</p>
+                
+                <div class="dashboard-stats">
+                    <div class="stat-card">
+                        <h3>{{ turmas_count }}</h3>
+                        <p>Turmas</p>
+                    </div>
+                </div>
+                
+                {% if recent_activities %}
+                    <div class="recent-activities">
+                        <h3>Atividades Recentes</h3>
+                        <ul>
+                            {% for atividade in recent_activities %}
+                                <li>
+                                    <a href="{% url 'atividade_detalhe' atividade.id %}">
+                                        {{ atividade.titulo }} - {{ atividade.turma.disciplina.nome }}
+                                        ({{ atividade.turma.codigo }})
+                                    </a>
+                                    <span class="deadline">Entrega: {{ atividade.dataEntrega }}</span>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    
+                    <a href="{% url 'criar_atividade' %}" class="btn btn-primary">Criar Nova Atividade</a>
+                {% endif %}
+            {% else %}
+                <p>Olá, Coordenador(a) {{ username }}! Gerencie seu departamento através dos links acima.</p>
+                
+                {% if cursos %}
+                    <div class="cursos-section">
+                        <h3>Seus Cursos</h3>
+                        <ul>
+                            {% for curso in cursos %}
+                                <li>{{ curso.nome }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                {% endif %}
+            {% endif %}
+        {% else %}
+            <p>Faça login para acessar todos os recursos.</p>
+            <a href="{% url 'login' %}" class="btn btn-primary">Login</a>
+        {% endif %}
+    </div>
 </body>
 </html>

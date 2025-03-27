@@ -1,100 +1,131 @@
 from django.db import models
 from django.core import validators
-
-class Aluno(models.Model):
-    idAluno = models.AutoField(primary_key=True)
-    nomeAluno = models.CharField(max_length=255)
-    emailAluno = models.EmailField(unique=True)
-    senhaAluno = models.CharField(max_length=128)  # Aumentei o tamanho da senha
-    matriculaAluno = models.IntegerField()
-    
-    def __str__(self):
-        return self.nomeAluno
-
-class Disciplina(models.Model):
-    idDisciplina = models.AutoField(primary_key=True)
-    nomeDisciplina = models.CharField(max_length=60)
-    codigoDisciplina = models.CharField(max_length=10)
-    
-    def __str__(self):
-        return self.nomeDisciplina
-    
-
-class Professor(models.Model):
-    idProfessor = models.AutoField(primary_key=True)
-    nomeProf = models.CharField(max_length=255)
-    emailProf = models.EmailField(unique=True)
-    senhaProf = models.CharField(max_length=128)  # Aumentei o tamanho da senha
-    disciplinaProf = models.ForeignKey(Disciplina, on_delete=models.CASCADE, null=True, blank=True)
-    
-    def __str__(self):
-        return self.nomeProf
-
-class Competencia(models.Model):  # Nome corrigido para singular
-    idCompetencia = models.AutoField(primary_key=True)
-    descricao = models.TextField()
-    
-    def __str__(self):
-        return self.descricao
+from django.utils import timezone
 
 class Curso(models.Model):
-    idCurso = models.AutoField(primary_key=True)
-    nomeCurso = models.CharField(max_length=30)
-    codigoCurso = models.CharField(max_length=10)
+    id = models.AutoField(primary_key=True)
+    nome = models.CharField(max_length=100)
     
     def __str__(self):
-        return self.nomeCurso
+        return self.nome
 
 class Coordenador(models.Model):
-    nomeCoord = models.CharField(max_length=255)
+    id = models.AutoField(primary_key=True)
+    nomeCoord = models.CharField(max_length=100)
     emailCoord = models.EmailField(unique=True)
-    senhaCoord = models.CharField(max_length=128)  # Aumentei o tamanho da senha
-    cursoCoord = models.ForeignKey(Curso, on_delete=models.CASCADE, null=True, blank=True)
+    senhaCoord = models.CharField(max_length=100)
+    curso = models.ForeignKey(Curso, on_delete=models.SET_NULL, null=True, related_name='coordenadores')
     
     def __str__(self):
         return self.nomeCoord
 
+class Aluno(models.Model):
+    idAluno = models.AutoField(primary_key=True)
+    nomeAluno = models.CharField(max_length=100)
+    emailAluno = models.EmailField(unique=True)
+    senhaAluno = models.CharField(max_length=100)
+    matricula = models.CharField(max_length=20, unique=True)
+    curso = models.ForeignKey(Curso, on_delete=models.CASCADE, related_name='alunos')
+    
+    def __str__(self):
+        return f"{self.nomeAluno} ({self.matricula})"
+
+class Professor(models.Model):
+    idProfessor = models.AutoField(primary_key=True)
+    nomeProf = models.CharField(max_length=100)
+    emailProf = models.EmailField(unique=True)
+    senhaProf = models.CharField(max_length=100)
+    
+    def __str__(self):
+        return self.nomeProf
+
+class Semestre(models.Model):
+    id = models.AutoField(primary_key=True)
+    ano = models.IntegerField()
+    periodo = models.IntegerField()  # 1 for first semester, 2 for second
+    
+    def __str__(self):
+        return f"{self.ano}/{self.periodo}"
+
+class Disciplina(models.Model):
+    id = models.AutoField(primary_key=True)
+    nome = models.CharField(max_length=100)
+    codigo = models.CharField(max_length=20)
+    curso = models.ForeignKey(Curso, on_delete=models.CASCADE, related_name='disciplinas')
+    
+    def __str__(self):
+        return f"{self.codigo} - {self.nome}"
+
 class Turma(models.Model):
-    idTurma = models.AutoField(primary_key=True)
-    sigla = models.CharField(max_length=20, null=True, blank=True)
-    semestre = models.CharField(max_length=20)
+    id = models.AutoField(primary_key=True)
+    codigo = models.CharField(max_length=20)  # e.g. "A", "B", "C"
+    disciplina = models.ForeignKey(Disciplina, on_delete=models.CASCADE, related_name='turmas')
+    professor = models.ForeignKey(Professor, on_delete=models.CASCADE, related_name='turmas')
+    semestre = models.ForeignKey(Semestre, on_delete=models.CASCADE, related_name='turmas')
     
     def __str__(self):
-        return self.sigla
-
-class Atividade(models.Model):
-    idAtividade = models.AutoField(primary_key=True)
-    titulo = models.CharField(max_length=200)
-    atividadeProf = models.ForeignKey(Professor, on_delete=models.CASCADE, null=True, blank=True)
-    atividadeDisc = models.ForeignKey(Disciplina, on_delete=models.CASCADE, null=True, blank=True)
-    atividadeTurma = models.ForeignKey(Turma, on_delete=models.CASCADE, null=True, blank=True)
-    data = models.DateField()
-    
-    def __str__(self):
-        return self.titulo
-
-class Nota(models.Model):
-    aluno = models.ForeignKey(Aluno, on_delete=models.CASCADE, related_name="notas_recebidas")
-    atividade = models.ForeignKey(Atividade, on_delete=models.CASCADE)
-    competencia = models.ForeignKey(Competencia, on_delete=models.CASCADE, null=True, blank=True)
-    avaliador_aluno = models.ForeignKey(Aluno, on_delete=models.CASCADE, null=True, blank=True, related_name="notas_dadas_aluno")
-    avaliador_professor = models.ForeignKey(Professor, on_delete=models.CASCADE, null=True, blank=True, related_name="notas_dadas_professor")
-    nota = models.FloatField(validators=[validators.MinValueValidator(0.0), validators.MaxValueValidator(5.0)])
-    data = models.DateField()
-
-    def __str__(self):
-        if self.avaliador_professor:
-            return f"{self.avaliador_professor.nomeProf} avaliou {self.aluno.nomeAluno}"
-        elif self.avaliador_aluno:
-            return f"{self.avaliador_aluno.nomeAluno} avaliou {self.aluno.nomeAluno}"
-        return f"Avaliação de {self.aluno.nomeAluno}"
-
+        return f"{self.disciplina} - Turma {self.codigo} ({self.semestre})"
 
 class TurmaAluno(models.Model):
-    aluno = models.ForeignKey(Aluno, on_delete=models.CASCADE)
-    turma = models.ForeignKey(Turma, on_delete=models.CASCADE, null=True, blank=True)
-    semestre = models.CharField(max_length=30)
-    disciplina = models.ForeignKey(Disciplina, on_delete=models.CASCADE, null=True, blank=True)
+    id = models.AutoField(primary_key=True)
+    turma = models.ForeignKey(Turma, on_delete=models.CASCADE, related_name='matriculas')
+    aluno = models.ForeignKey(Aluno, on_delete=models.CASCADE, related_name='turmas')
+    
+    class Meta:
+        unique_together = ('turma', 'aluno')
     
     def __str__(self):
-        return f'{self.aluno} - {self.disciplina} - {self.turma}'
+        return f"{self.aluno} - {self.turma}"
+
+class Atividade(models.Model):
+    id = models.AutoField(primary_key=True)
+    titulo = models.CharField(max_length=100)
+    descricao = models.TextField()
+    dataEntrega = models.DateField()
+    turma = models.ForeignKey(Turma, on_delete=models.CASCADE, related_name='atividades')
+    
+    def __str__(self):
+        return f"{self.titulo} ({self.turma})"
+
+class Grupo(models.Model):
+    id = models.AutoField(primary_key=True)
+    nome = models.CharField(max_length=100)
+    atividade = models.ForeignKey(Atividade, on_delete=models.CASCADE, related_name='grupos')
+    alunos = models.ManyToManyField(Aluno, related_name='grupos')
+    
+    def __str__(self):
+        return f"{self.nome} - {self.atividade}"
+
+class Competencia(models.Model):
+    id = models.AutoField(primary_key=True)
+    nome = models.CharField(max_length=100)
+    descricao = models.TextField()
+    
+    def __str__(self):
+        return self.nome
+
+class Avaliacao(models.Model):
+    id = models.AutoField(primary_key=True)
+    avaliador_aluno = models.ForeignKey(Aluno, on_delete=models.CASCADE, related_name='avaliacoes_realizadas')
+    avaliado_aluno = models.ForeignKey(Aluno, on_delete=models.CASCADE, related_name='avaliacoes_recebidas')
+    atividade = models.ForeignKey(Atividade, on_delete=models.CASCADE, related_name='avaliacoes')
+    concluida = models.BooleanField(default=False)
+    
+    class Meta:
+        unique_together = ('avaliador_aluno', 'avaliado_aluno', 'atividade')
+    
+    def __str__(self):
+        return f"Avaliação de {self.avaliador_aluno} para {self.avaliado_aluno} - {self.atividade}"
+
+class Nota(models.Model):
+    id = models.AutoField(primary_key=True)
+    avaliacao = models.ForeignKey(Avaliacao, on_delete=models.CASCADE, related_name='notas')
+    competencia = models.ForeignKey(Competencia, on_delete=models.CASCADE, related_name='notas')
+    nota = models.IntegerField()
+    dataAvaliacao = models.DateTimeField(default=timezone.now)
+    
+    class Meta:
+        unique_together = ('avaliacao', 'competencia')
+    
+    def __str__(self):
+        return f"Nota {self.nota} para {self.competencia} - {self.avaliacao}"

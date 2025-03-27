@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    {% load static %}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Avaliar Colega - Feedback 360°</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{% static 'css/main.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+</head>
+<body>
+    <div class="header">
+        <p class="logo"><em>Inatel</em></p>
+
+        <div class="links">
+            <a href="{% url 'home' %}">Home</a>
+            <a href="{% url 'atividades' %}" class="active">Atividades</a>
+            <a href="{% url 'notas' %}">Notas</a>
+            <a href="{% url 'disciplinas' %}">Disciplinas</a>
+            <a href="{% url 'perfil' %}">Perfil</a>
+            <a href="{% url 'logout' %}">Sair</a>
+        </div>
+    </div>
+    
+    <div class="container mt-4">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'atividades' %}">Atividades</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'atividade_detalhe' avaliacao.atividade.id %}">{{ avaliacao.atividade.titulo }}</a></li>
+                <li class="breadcrumb-item active">Avaliar Colega</li>
+            </ol>
+        </nav>
+        
+        <div class="card">
+            <div class="card-header">
+                <h2>Avaliar Colega: {{ avaliacao.avaliado_aluno.nomeAluno }}</h2>
+                <p class="text-muted">Atividade: {{ avaliacao.atividade.titulo }}</p>
+            </div>
+            <div class="card-body">
+                <p>Avalie seu colega em cada uma das competências abaixo, usando uma escala de 1 a 5, onde:</p>
+                <div class="rating-legend mb-4">
+                    <div class="d-flex justify-content-between">
+                        <div><i class="fas fa-star text-warning"></i> = Insatisfatório</div>
+                        <div><i class="fas fa-star text-warning"></i><i class="fas fa-star text-warning"></i> = Regular</div>
+                        <div><i class="fas fa-star text-warning"></i><i class="fas fa-star text-warning"></i><i class="fas fa-star text-warning"></i> = Bom</div>
+                        <div><i class="fas fa-star text-warning"></i><i class="fas fa-star text-warning"></i><i class="fas fa-star text-warning"></i><i class="fas fa-star text-warning"></i> = Muito Bom</div>
+                        <div><i class="fas fa-star text-warning"></i><i class="fas fa-star text-warning"></i><i class="fas fa-star text-warning"></i><i class="fas fa-star text-warning"></i><i class="fas fa-star text-warning"></i> = Excelente</div>
+                    </div>
+                </div>
+                
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    {% for competencia in competencias %}
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ competencia.nome }}</h5>
+                            <p class="card-text">{{ competencia.descricao }}</p>
+                            
+                            <div class="form-group">
+                                <label>Sua avaliação:</label>
+                                <div class="rating">
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="radio" name="competencia_{{ competencia.id }}" id="comp_{{ competencia.id }}_1" value="1" required>
+                                        <label class="form-check-label" for="comp_{{ competencia.id }}_1">1</label>
+                                    </div>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="radio" name="competencia_{{ competencia.id }}" id="comp_{{ competencia.id }}_2" value="2">
+                                        <label class="form-check-label" for="comp_{{ competencia.id }}_2">2</label>
+                                    </div>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="radio" name="competencia_{{ competencia.id }}" id="comp_{{ competencia.id }}_3" value="3">
+                                        <label class="form-check-label" for="comp_{{ competencia.id }}_3">3</label>
+                                    </div>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="radio" name="competencia_{{ competencia.id }}" id="comp_{{ competencia.id }}_4" value="4">
+                                        <label class="form-check-label" for="comp_{{ competencia.id }}_4">4</label>
+                                    </div>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="radio" name="competencia_{{ competencia.id }}" id="comp_{{ competencia.id }}_5" value="5">
+                                        <label class="form-check-label" for="comp_{{ competencia.id }}_5">5</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle"></i> Atenção: Após confirmar a avaliação, não será possível modificá-la.
+                    </div>
+                    
+                    <div class="form-group">
+                        <button type="submit" class="btn btn-primary btn-lg">Confirmar Avaliação</button>
+                        <a href="{% url 'atividade_detalhe' avaliacao.atividade.id %}" class="btn btn-secondary btn-lg ml-2">Voltar</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>
