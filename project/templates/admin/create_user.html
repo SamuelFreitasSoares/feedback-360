@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    {% load static %}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Criar Usuário - Feedback 360°</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{% static 'css/main.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+</head>
+<body>
+    <div class="header">
+        <p class="logo"><em>Inatel</em></p>
+
+        <div class="links">
+            <a href="{% url 'home' %}">Home</a>
+            <a href="{% url 'admin_dashboard' %}">Dashboard</a>
+            <a href="{% url 'admin_users' %}" class="active">Usuários</a>
+            <a href="{% url 'admin_courses' %}">Cursos</a>
+            <a href="{% url 'admin_disciplines' %}">Disciplinas</a>
+            <a href="{% url 'admin_classes' %}">Turmas</a>
+            <a href="{% url 'admin_import_users' %}">Importar</a>
+            <a href="{% url 'logout' %}">Sair</a>
+        </div>
+    </div>
+    
+    <div class="container mt-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>Criar Novo Usuário</h1>
+            <a href="{% url 'admin_users' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Voltar para Usuários
+            </a>
+        </div>
+        
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+        
+        <div class="card">
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="form-group">
+                        <label for="user_role">Tipo de Usuário</label>
+                        <select class="form-control" id="user_role" name="user_role" required>
+                            <option value="">Selecione o tipo de usuário</option>
+                            <option value="aluno">Aluno</option>
+                            <option value="professor">Professor</option>
+                            <option value="coordenador">Coordenador</option>
+                            <option value="admin">Administrador</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="nome">Nome</label>
+                        <input type="text" class="form-control" id="nome" name="nome" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="email">Email</label>
+                        <input type="email" class="form-control" id="email" name="email" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="senha">Senha</label>
+                        <input type="password" class="form-control" id="senha" name="senha" placeholder="Deixe em branco para usar a senha padrão (123456)">
+                        <small class="form-text text-muted">Se não for informada, a senha padrão será "123456".</small>
+                    </div>
+                    
+                    <!-- Campos específicos para Aluno -->
+                    <div id="aluno_fields" style="display: none;">
+                        <div class="form-group">
+                            <label for="matricula_aluno">Matrícula</label>
+                            <input type="text" class="form-control" id="matricula_aluno" name="matricula" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="curso_aluno">Curso</label>
+                            <select class="form-control" id="curso_aluno" name="curso" required>
+                                <option value="">Selecione um curso</option>
+                                {% for curso in cursos %}
+                                    <option value="{{ curso.id }}">{{ curso.nome }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- Campos específicos para Coordenador -->
+                    <div id="coordenador_fields" style="display: none;">
+                        <div class="form-group">
+                            <label for="curso_coord">Curso</label>
+                            <select class="form-control" id="curso_coord" name="curso" required>
+                                <option value="">Selecione um curso</option>
+                                {% for curso in cursos %}
+                                    <option value="{{ curso.id }}">{{ curso.nome }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">Criar Usuário</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script>
+        // Show/hide specific fields based on user role
+        $('#user_role').change(function() {
+            var role = $(this).val();
+            
+            // Hide all role-specific fields
+            $('#aluno_fields, #coordenador_fields').hide();
+            
+            // Disable all fields first (so they don't get submitted)
+            $('#matricula_aluno').prop('disabled', true);
+            $('#curso_aluno').prop('disabled', true);
+            $('#curso_coord').prop('disabled', true);
+            
+            // Reset required attributes
+            $('#matricula_aluno, #curso_aluno, #curso_coord').prop('required', false);
+            
+            // Show and enable fields based on selected role
+            if (role === 'aluno') {
+                $('#aluno_fields').show();
+                $('#matricula_aluno').prop('required', true).prop('disabled', false);
+                $('#curso_aluno').prop('required', true).prop('disabled', false);
+            } else if (role === 'coordenador') {
+                $('#coordenador_fields').show();
+                $('#curso_coord').prop('required', true).prop('disabled', false);
+            }
+        });
+        
+        // Initialize form on page load
+        $(document).ready(function() {
+            // Run the change handler on page load to set initial state
+            $('#user_role').trigger('change');
+            
+            // Form submission handling
+            $('form').submit(function(e) {
+                var role = $('#user_role').val();
+                console.log("Role selected:", role);
+                
+                if (role === 'aluno') {
+                    var matricula = $('#matricula_aluno').val();
+                    var curso = $('#curso_aluno').val();
+                    
+                    console.log("Matricula:", matricula);
+                    console.log("Curso:", curso);
+                    
+                    if (!matricula || matricula.trim() === "" || !curso || curso === "") {
+                        alert('Matrícula e curso são obrigatórios para alunos.');
+                        e.preventDefault();
+                        return false;
+                    }
+                } else if (role === 'coordenador') {
+                    var curso = $('#curso_coord').val();
+                    console.log("Curso Coordenador:", curso);
+                    
+                    if (!curso || curso === "") {
+                        alert('Curso é obrigatório para coordenadores.');
+                        e.preventDefault();
+                        return false;
+                    }
+                }
+                
+                // Enable all fields before submission so they submit properly
+                if (role === 'aluno') {
+                    $('#matricula_aluno, #curso_aluno').prop('disabled', false);
+                } else if (role === 'coordenador') {
+                    $('#curso_coord').prop('disabled', false);
+                }
+                
+                return true;
+            });
+        });
+    </script>
+</body>
+</html>

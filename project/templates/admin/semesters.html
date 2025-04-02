@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    {% load static %}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerenciamento de Semestres - Feedback 360°</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{% static 'css/main.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+</head>
+<body>
+    <div class="header">
+        <p class="logo"><em>Inatel</em></p>
+
+        <div class="links">
+            <a href="{% url 'home' %}">Home</a>
+            <a href="{% url 'admin_dashboard' %}">Dashboard</a>
+            <a href="{% url 'admin_users' %}">Usuários</a>
+            <a href="{% url 'admin_courses' %}">Cursos</a>
+            <a href="{% url 'admin_disciplines' %}">Disciplinas</a>
+            <a href="{% url 'admin_classes' %}">Turmas</a>
+            <a href="{% url 'admin_semesters' %}" class="active">Semestres</a>
+            <a href="{% url 'admin_import_users' %}">Importar</a>
+            <a href="{% url 'logout' %}">Sair</a>
+        </div>
+    </div>
+    
+    <div class="container mt-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>Gerenciamento de Semestres</h1>
+            <button class="btn btn-primary" data-toggle="modal" data-target="#createSemesterModal">
+                <i class="fas fa-plus-circle"></i> Novo Semestre
+            </button>
+        </div>
+        
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+        
+        <div class="card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Ano</th>
+                                <th>Período</th>
+                                <th>Qtd. Turmas</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for semestre in semestres %}
+                                <tr>
+                                    <td>{{ semestre.ano }}</td>
+                                    <td>{{ semestre.periodo }}</td>
+                                    <td>{{ semestre.turmas.count }}</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-danger delete-semester" data-toggle="modal" data-target="#deleteSemesterModal" 
+                                                data-id="{{ semestre.id }}" data-nome="{{ semestre }}">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            {% empty %}
+                                <tr>
+                                    <td colspan="4" class="text-center">Nenhum semestre cadastrado.</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Create Semester Modal -->
+    <div class="modal fade" id="createSemesterModal" tabindex="-1" role="dialog" aria-labelledby="createSemesterModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="createSemesterModalLabel">Novo Semestre</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="create">
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label for="ano">Ano</label>
+                            <input type="number" class="form-control" id="ano" name="ano" min="2000" max="2100" value="{{ current_year }}" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="periodo">Período</label>
+                            <select class="form-control" id="periodo" name="periodo" required>
+                                <option value="1">1 (Primeiro semestre)</option>
+                                <option value="2">2 (Segundo semestre)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Salvar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Delete Semester Modal -->
+    <div class="modal fade" id="deleteSemesterModal" tabindex="-1" role="dialog" aria-labelledby="deleteSemesterModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="deleteSemesterModalLabel">Confirmar Exclusão</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <p>Tem certeza que deseja excluir o semestre <strong id="delete_semester_name"></strong>?</p>
+                    <p class="text-danger">Esta ação excluirá todas as turmas, atividades e avaliações associadas a este semestre!</p>
+                </div>
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="delete">
+                    <input type="hidden" name="semestre_id" id="delete_semestre_id">
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-danger">Excluir</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script>
+        // Delete Semester
+        $('.delete-semester').click(function() {
+            var id = $(this).data('id');
+            var nome = $(this).data('nome');
+            
+            $('#delete_semestre_id').val(id);
+            $('#delete_semester_name').text(nome);
+        });
+    </script>
+</body>
+</html>

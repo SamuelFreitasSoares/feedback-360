@@ -16,7 +16,12 @@
         <div class="links">
             <a href="{% url 'home' %}">Home</a>
             <a href="{% url 'admin_dashboard' %}" class="active">Dashboard</a>
-            <a href="{% url 'admin_import_users' %}">Importar Usuários</a>
+            <a href="{% url 'admin_users' %}">Usuários</a>
+            <a href="{% url 'admin_courses' %}">Cursos</a>
+            <a href="{% url 'admin_disciplines' %}">Disciplinas</a>
+            <a href="{% url 'admin_classes' %}">Turmas</a>
+            <a href="{% url 'admin_semesters' %}">Semestres</a>
+            <a href="{% url 'admin_import_users' %}">Importar</a>
             <a href="{% url 'logout' %}">Sair</a>
         </div>
     </div>
@@ -71,10 +76,10 @@
             <div class="col-md-6">
                 <div class="card mb-4">
                     <div class="card-header d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0">Gerenciar Cursos</h5>
-                        <button class="btn btn-sm btn-primary" data-toggle="modal" data-target="#novoCursoModal">
-                            <i class="fas fa-plus"></i> Novo Curso
-                        </button>
+                        <h5 class="mb-0">Cursos</h5>
+                        <a href="{% url 'admin_courses' %}" class="btn btn-sm btn-primary">
+                            <i class="fas fa-external-link-alt"></i> Ver Todos
+                        </a>
                     </div>
                     <div class="card-body">
                         <div class="list-group">
@@ -82,8 +87,8 @@
                                 <div class="list-group-item d-flex justify-content-between align-items-center">
                                     {{ curso.nome }}
                                     <div>
-                                        <button class="btn btn-sm btn-info">Editar</button>
-                                        <button class="btn btn-sm btn-danger">Excluir</button>
+                                        <span class="badge badge-primary badge-pill">{{ curso.disciplinas.count }} disciplinas</span>
+                                        <span class="badge badge-info badge-pill">{{ curso.alunos.count }} alunos</span>
                                     </div>
                                 </div>
                             {% empty %}
@@ -97,19 +102,22 @@
             <div class="col-md-6">
                 <div class="card mb-4">
                     <div class="card-header d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0">Gerenciar Coordenadores</h5>
-                        <button class="btn btn-sm btn-primary" data-toggle="modal" data-target="#novoCoordenadorModal">
-                            <i class="fas fa-plus"></i> Novo Coordenador
-                        </button>
+                        <h5 class="mb-0">Coordenadores</h5>
+                        <a href="{% url 'admin_users' %}" class="btn btn-sm btn-primary">
+                            <i class="fas fa-external-link-alt"></i> Ver Todos
+                        </a>
                     </div>
                     <div class="card-body">
                         <div class="list-group">
                             {% for coordenador in coordenadores %}
                                 <div class="list-group-item d-flex justify-content-between align-items-center">
-                                    {{ coordenador.nomeCoord }} - {{ coordenador.curso.nome }}
+                                    {{ coordenador.nomeCoord }}
                                     <div>
-                                        <button class="btn btn-sm btn-info">Editar</button>
-                                        <button class="btn btn-sm btn-danger">Excluir</button>
+                                        {% if coordenador.curso %}
+                                            <span class="badge badge-success">{{ coordenador.curso.nome }}</span>
+                                        {% else %}
+                                            <span class="badge badge-secondary">Sem curso atribuído</span>
+                                        {% endif %}
                                     </div>
                                 </div>
                             {% empty %}
@@ -136,97 +144,26 @@
                                 </a>
                             </div>
                             <div class="col-md-3 mb-3">
-                                <a href="#" class="btn btn-lg btn-block btn-outline-success">
+                                <a href="{% url 'admin_users' %}" class="btn btn-lg btn-block btn-outline-success">
                                     <i class="fas fa-users-cog mb-2"></i><br>
                                     Gerenciar Usuários
                                 </a>
                             </div>
                             <div class="col-md-3 mb-3">
-                                <a href="#" class="btn btn-lg btn-block btn-outline-info">
+                                <a href="{% url 'admin_disciplines' %}" class="btn btn-lg btn-block btn-outline-info">
                                     <i class="fas fa-book mb-2"></i><br>
                                     Gerenciar Disciplinas
                                 </a>
                             </div>
                             <div class="col-md-3 mb-3">
-                                <a href="#" class="btn btn-lg btn-block btn-outline-warning">
-                                    <i class="fas fa-chart-bar mb-2"></i><br>
-                                    Relatórios
+                                <a href="{% url 'admin_classes' %}" class="btn btn-lg btn-block btn-outline-warning">
+                                    <i class="fas fa-chalkboard mb-2"></i><br>
+                                    Gerenciar Turmas
                                 </a>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Modal para Novo Curso -->
-    <div class="modal fade" id="novoCursoModal" tabindex="-1" role="dialog" aria-labelledby="novoCursoModalLabel" aria-hidden="true">
-        <div class="modal-dialog" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="novoCursoModalLabel">Novo Curso</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                <form method="post" action="#">
-                    {% csrf_token %}
-                    <div class="modal-body">
-                        <div class="form-group">
-                            <label for="nome_curso">Nome do Curso</label>
-                            <input type="text" class="form-control" id="nome_curso" name="nome_curso" required>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
-                        <button type="submit" class="btn btn-primary">Salvar</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Modal para Novo Coordenador -->
-    <div class="modal fade" id="novoCoordenadorModal" tabindex="-1" role="dialog" aria-labelledby="novoCoordenadorModalLabel" aria-hidden="true">
-        <div class="modal-dialog" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="novoCoordenadorModalLabel">Novo Coordenador</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                <form method="post" action="#">
-                    {% csrf_token %}
-                    <div class="modal-body">
-                        <div class="form-group">
-                            <label for="nome_coordenador">Nome</label>
-                            <input type="text" class="form-control" id="nome_coordenador" name="nome_coordenador" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="email_coordenador">Email</label>
-                            <input type="email" class="form-control" id="email_coordenador" name="email_coordenador" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="senha_coordenador">Senha</label>
-                            <input type="password" class="form-control" id="senha_coordenador" name="senha_coordenador" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="curso_coordenador">Curso</label>
-                            <select class="form-control" id="curso_coordenador" name="curso_coordenador" required>
-                                <option value="">Selecione um curso</option>
-                                {% for curso in cursos %}
-                                    <option value="{{ curso.id }}">{{ curso.nome }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
-                        <button type="submit" class="btn btn-primary">Salvar</button>
-                    </div>
-                </form>
             </div>
         </div>
     </div>

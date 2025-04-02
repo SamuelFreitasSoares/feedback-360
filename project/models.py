@@ -15,6 +15,7 @@ class Coordenador(models.Model):
     emailCoord = models.EmailField(unique=True)
     senhaCoord = models.CharField(max_length=100)
     curso = models.ForeignKey(Curso, on_delete=models.SET_NULL, null=True, related_name='coordenadores')
+    reset_token = models.CharField(max_length=100, null=True, blank=True)
     
     def __str__(self):
         return self.nomeCoord
@@ -26,6 +27,7 @@ class Aluno(models.Model):
     senhaAluno = models.CharField(max_length=100)
     matricula = models.CharField(max_length=20, unique=True)
     curso = models.ForeignKey(Curso, on_delete=models.CASCADE, related_name='alunos')
+    reset_token = models.CharField(max_length=100, null=True, blank=True)
     
     def __str__(self):
         return f"{self.nomeAluno} ({self.matricula})"
@@ -35,6 +37,7 @@ class Professor(models.Model):
     nomeProf = models.CharField(max_length=100)
     emailProf = models.EmailField(unique=True)
     senhaProf = models.CharField(max_length=100)
+    reset_token = models.CharField(max_length=100, null=True, blank=True)
     
     def __str__(self):
         return self.nomeProf
@@ -83,6 +86,7 @@ class Atividade(models.Model):
     descricao = models.TextField()
     dataEntrega = models.DateField()
     turma = models.ForeignKey(Turma, on_delete=models.CASCADE, related_name='atividades')
+    competencias = models.ManyToManyField('Competencia', related_name='atividades', blank=True)
     
     def __str__(self):
         return f"{self.titulo} ({self.turma})"
@@ -129,3 +133,65 @@ class Nota(models.Model):
     
     def __str__(self):
         return f"Nota {self.nota} para {self.competencia} - {self.avaliacao}"
+
+class Admin(models.Model):
+    id = models.AutoField(primary_key=True)
+    nomeAdmin = models.CharField(max_length=100)
+    emailAdmin = models.EmailField(unique=True)
+    senhaAdmin = models.CharField(max_length=100)
+    reset_token = models.CharField(max_length=100, null=True, blank=True)
+    
+    def __str__(self):
+        return self.nomeAdmin
+
+class Notificacao(models.Model):
+    """Modelo para notificações do sistema"""
+    TIPO_CHOICES = (
+        ('info', 'Informação'),
+        ('warning', 'Aviso'),
+        ('success', 'Sucesso'),
+        ('danger', 'Erro'),
+    )
+    
+    DESTINATARIO_CHOICES = (
+        ('aluno', 'Aluno'),
+        ('professor', 'Professor'),
+        ('coordenador', 'Coordenador'),
+        ('admin', 'Administrador'),
+    )
+    
+    titulo = models.CharField(max_length=100)
+    mensagem = models.TextField()
+    data_criacao = models.DateTimeField(auto_now_add=True)
+    lida = models.BooleanField(default=False)
+    tipo = models.CharField(max_length=10, choices=TIPO_CHOICES, default='info')
+    
+    # Destinatário (apenas um destes campos será preenchido)
+    aluno = models.ForeignKey(Aluno, null=True, blank=True, on_delete=models.CASCADE, related_name='notificacoes')
+    professor = models.ForeignKey(Professor, null=True, blank=True, on_delete=models.CASCADE, related_name='notificacoes')
+    coordenador = models.ForeignKey(Coordenador, null=True, blank=True, on_delete=models.CASCADE, related_name='notificacoes')
+    admin = models.ForeignKey(Admin, null=True, blank=True, on_delete=models.CASCADE, related_name='notificacoes')
+    
+    # Link para redirecionamento
+    link = models.CharField(max_length=255, blank=True, null=True)
+    
+    class Meta:
+        verbose_name = 'Notificação'
+        verbose_name_plural = 'Notificações'
+        ordering = ['-data_criacao']
+    
+    def __str__(self):
+        return self.titulo
+    
+    @property
+    def destinatario_tipo(self):
+        """Retorna o tipo de destinatário"""
+        if self.aluno:
+            return 'aluno'
+        elif self.professor:
+            return 'professor'
+        elif self.coordenador:
+            return 'coordenador'
+        elif self.admin:
+            return 'admin'
+        return None

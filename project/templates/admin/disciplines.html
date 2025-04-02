@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    {% load static %}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerenciamento de Disciplinas - Feedback 360°</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{% static 'css/main.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+</head>
+<body>
+    <div class="header">
+        <p class="logo"><em>Inatel</em></p>
+
+        <div class="links">
+            <a href="{% url 'home' %}">Home</a>
+            <a href="{% url 'admin_dashboard' %}">Dashboard</a>
+            <a href="{% url 'admin_users' %}">Usuários</a>
+            <a href="{% url 'admin_courses' %}">Cursos</a>
+            <a href="{% url 'admin_disciplines' %}" class="active">Disciplinas</a>
+            <a href="{% url 'admin_classes' %}">Turmas</a>
+            <a href="{% url 'admin_semesters' %}">Semestres</a>
+            <a href="{% url 'admin_import_users' %}">Importar</a>
+            <a href="{% url 'logout' %}">Sair</a>
+        </div>
+    </div>
+    
+    <div class="container mt-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>Gerenciamento de Disciplinas</h1>
+            <button class="btn btn-primary" data-toggle="modal" data-target="#createDisciplineModal">
+                <i class="fas fa-plus-circle"></i> Nova Disciplina
+            </button>
+        </div>
+        
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+        
+        <div class="card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Código</th>
+                                <th>Nome</th>
+                                <th>Curso</th>
+                                <th>Qtd. Turmas</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for disciplina in disciplinas %}
+                                <tr>
+                                    <td>{{ disciplina.codigo }}</td>
+                                    <td>{{ disciplina.nome }}</td>
+                                    <td>{{ disciplina.curso.nome }}</td>
+                                    <td>{{ disciplina.turmas.count }}</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-info edit-discipline" data-toggle="modal" data-target="#editDisciplineModal" 
+                                                data-id="{{ disciplina.id }}" data-nome="{{ disciplina.nome }}" data-codigo="{{ disciplina.codigo }}" data-curso-id="{{ disciplina.curso.id }}">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-danger delete-discipline" data-toggle="modal" data-target="#deleteDisciplineModal" 
+                                                data-id="{{ disciplina.id }}" data-nome="{{ disciplina.nome }}">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            {% empty %}
+                                <tr>
+                                    <td colspan="5" class="text-center">Nenhuma disciplina cadastrada.</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Create Discipline Modal -->
+    <div class="modal fade" id="createDisciplineModal" tabindex="-1" role="dialog" aria-labelledby="createDisciplineModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="createDisciplineModalLabel">Nova Disciplina</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="create">
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label for="nome">Nome da Disciplina</label>
+                            <input type="text" class="form-control" id="nome" name="nome" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="codigo">Código da Disciplina</label>
+                            <input type="text" class="form-control" id="codigo" name="codigo" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="curso">Curso</label>
+                            <select class="form-control" id="curso" name="curso" required>
+                                <option value="">Selecione um curso</option>
+                                {% for curso in cursos %}
+                                    <option value="{{ curso.id }}">{{ curso.nome }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Salvar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Edit Discipline Modal -->
+    <div class="modal fade" id="editDisciplineModal" tabindex="-1" role="dialog" aria-labelledby="editDisciplineModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editDisciplineModalLabel">Editar Disciplina</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="update">
+                    <input type="hidden" name="disciplina_id" id="edit_disciplina_id">
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label for="edit_nome">Nome da Disciplina</label>
+                            <input type="text" class="form-control" id="edit_nome" name="nome" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="edit_codigo">Código da Disciplina</label>
+                            <input type="text" class="form-control" id="edit_codigo" name="codigo" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="edit_curso">Curso</label>
+                            <select class="form-control" id="edit_curso" name="curso" required>
+                                <option value="">Selecione um curso</option>
+                                {% for curso in cursos %}
+                                    <option value="{{ curso.id }}">{{ curso.nome }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Salvar Alterações</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Delete Discipline Modal -->
+    <div class="modal fade" id="deleteDisciplineModal" tabindex="-1" role="dialog" aria-labelledby="deleteDisciplineModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="deleteDisciplineModalLabel">Confirmar Exclusão</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <p>Tem certeza que deseja excluir a disciplina <strong id="delete_discipline_name"></strong>?</p>
+                    <p class="text-danger">Esta ação excluirá todas as turmas e atividades associadas a esta disciplina!</p>
+                </div>
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="delete">
+                    <input type="hidden" name="disciplina_id" id="delete_disciplina_id">
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-danger">Excluir</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script>
+        // Edit Discipline
+        $('.edit-discipline').click(function() {
+            var id = $(this).data('id');
+            var nome = $(this).data('nome');
+            var codigo = $(this).data('codigo');
+            var cursoId = $(this).data('curso-id');
+            
+            $('#edit_disciplina_id').val(id);
+            $('#edit_nome').val(nome);
+            $('#edit_codigo').val(codigo);
+            $('#edit_curso').val(cursoId);
+        });
+        
+        // Delete Discipline
+        $('.delete-discipline').click(function() {
+            var id = $(this).data('id');
+            var nome = $(this).data('nome');
+            
+            $('#delete_disciplina_id').val(id);
+            $('#delete_discipline_name').text(nome);
+        });
+    </script>
+</body>
+</html>

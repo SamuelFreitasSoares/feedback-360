@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-da@t8ev2jsmf1rb0k7nf9$60i25wdc)@3ee!qr$o78m*s^i=0*
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '[::1]']
 
 
 # Application definition
@@ -75,11 +75,10 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'FeedBack360.wsgi.application'
-WSGI_APPLICATION = 'FeedBack360.wsgi.application'
 
 
 # Database
-# https://docs.djangoproject.com/en/4.2/ref/settings/#databases# https://docs.djangoproject.com/en/4.2/ref/settings/#databases
+# https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
 DATABASES = {
     'default': {
@@ -90,7 +89,7 @@ DATABASES = {
 
 
 # Password validation
-# https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators# https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
+# https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -109,31 +108,28 @@ AUTH_PASSWORD_VALIDATORS = [
 
 
 # Internationalization
-# https://docs.djangoproject.com/en/4.2/topics/i18n/# https://docs.djangoproject.com/en/4.2/topics/i18n/
+# https://docs.djangoproject.com/en/4.2/topics/i18n/
 
-# Update language code and timezone for Braziland timezone for Brazil
+# Update language code and timezone for Brazil
 LANGUAGE_CODE = 'pt-br'
 TIME_ZONE = 'America/Sao_Paulo'
-TIME_ZONE = 'America/Sao_Paulo'
 
-USE_I18N = TrueUSE_I18N = True
+USE_I18N = True
 
-USE_TZ = TrueUSE_TZ = True
+USE_TZ = True
 
 
 # Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/4.2/howto/static-files/# https://docs.djangoproject.com/en/4.2/howto/static-files/
+# https://docs.djangoproject.com/en/4.2/howto/static-files/
 
 STATIC_URL = 'static/'
 STATICFILES_DIRS = [
-    BASE_DIR / 'static',   BASE_DIR / 'static',
+    BASE_DIR / 'static',
 ]
 STATIC_ROOT = BASE_DIR / 'staticfiles'
-STATIC_ROOT = BASE_DIR / 'staticfiles'
 
-# Media files configurationuration
+# Media files configuration
 MEDIA_URL = 'media/'
-MEDIA_ROOT = BASE_DIR / 'media'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 # Messages framework
@@ -147,12 +143,45 @@ MESSAGE_TAGS = {
 }
 
 # Session settings
-SESSION_COOKIE_AGE = 86400  # 24 hourshours
-SESSION_SAVE_EVERY_REQUEST = TrueSESSION_SAVE_EVERY_REQUEST = True
+SESSION_COOKIE_AGE = 86400  # 24 hours
+SESSION_SAVE_EVERY_REQUEST = True
+# Add this to ensure sessions are properly stored
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'
 
 # Default primary key field type
-# https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field# https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
+# https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Email settings for password reset
+
+# Default administrator email for contact
+ADMIN_EMAIL = 'admin@feedback360.com'
+
+# Development email settings (uses file-based backend in DEBUG mode)
+if DEBUG:
+    EMAIL_BACKEND = 'django.core.mail.backends.filebased.EmailBackend'
+    EMAIL_FILE_PATH = BASE_DIR / 'sent_emails'  # Where emails will be saved as files
+    
+    # Uncomment and configure these in production
+    # EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+    # EMAIL_HOST = 'smtp.gmail.com'
+    # EMAIL_PORT = 587
+    # EMAIL_USE_TLS = True
+    # EMAIL_HOST_USER = 'your-email@gmail.com'  # Email that will send messages
+    # EMAIL_HOST_PASSWORD = 'your-app-password'  # App password
+else:
+    # Production email settings
+    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+    EMAIL_HOST = 'smtp.gmail.com'
+    EMAIL_PORT = 587
+    EMAIL_USE_TLS = True
+    EMAIL_HOST_USER = 'seu-email@gmail.com'  # Replace with your email
+    EMAIL_HOST_PASSWORD = 'sua-senha-app'     # Use an app password generated from Google
+
+# Default sender name and email
+DEFAULT_FROM_EMAIL = 'Sistema Feedback 360° <seu-email@gmail.com>'
+
+# Password reset settings
+PASSWORD_RESET_TIMEOUT = 86400  # 24 hours in seconds
 

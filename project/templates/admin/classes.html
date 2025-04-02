@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    {% load static %}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerenciamento de Turmas - Feedback 360°</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{% static 'css/main.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+</head>
+<body>
+    <div class="header">
+        <p class="logo"><em>Inatel</em></p>
+
+        <div class="links">
+            <a href="{% url 'home' %}">Home</a>
+            <a href="{% url 'admin_dashboard' %}">Dashboard</a>
+            <a href="{% url 'admin_users' %}">Usuários</a>
+            <a href="{% url 'admin_courses' %}">Cursos</a>
+            <a href="{% url 'admin_disciplines' %}">Disciplinas</a>
+            <a href="{% url 'admin_classes' %}" class="active">Turmas</a>
+            <a href="{% url 'admin_semesters' %}">Semestres</a>
+            <a href="{% url 'admin_import_users' %}">Importar</a>
+            <a href="{% url 'logout' %}">Sair</a>
+        </div>
+    </div>
+    
+    <div class="container mt-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>Gerenciamento de Turmas</h1>
+            <button class="btn btn-primary" data-toggle="modal" data-target="#createClassModal">
+                <i class="fas fa-plus-circle"></i> Nova Turma
+            </button>
+        </div>
+        
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+        
+        <div class="card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Código</th>
+                                <th>Disciplina</th>
+                                <th>Professor</th>
+                                <th>Semestre</th>
+                                <th>Qtd. Alunos</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for turma in turmas %}
+                                <tr>
+                                    <td>{{ turma.codigo }}</td>
+                                    <td>{{ turma.disciplina.nome }} ({{ turma.disciplina.codigo }})</td>
+                                    <td>{{ turma.professor.nomeProf }}</td>
+                                    <td>{{ turma.semestre }}</td>
+                                    <td>{{ turma.matriculas.count }}</td>
+                                    <td>
+                                        <a href="{% url 'admin_class_students' turma.id %}" class="btn btn-sm btn-info mr-1" title="Gerenciar Alunos">
+                                            <i class="fas fa-users"></i>
+                                        </a>
+                                        <button class="btn btn-sm btn-info edit-class" data-toggle="modal" data-target="#editClassModal" 
+                                                data-id="{{ turma.id }}" data-codigo="{{ turma.codigo }}" 
+                                                data-disciplina="{{ turma.disciplina.id }}" data-professor="{{ turma.professor.idProfessor }}"
+                                                data-semestre="{{ turma.semestre.id }}">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-danger delete-class" data-toggle="modal" data-target="#deleteClassModal" 
+                                                data-id="{{ turma.id }}" data-nome="{{ turma.disciplina.nome }} {{ turma.codigo }}">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            {% empty %}
+                                <tr>
+                                    <td colspan="6" class="text-center">Nenhuma turma cadastrada.</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Create Class Modal -->
+    <div class="modal fade" id="createClassModal" tabindex="-1" role="dialog" aria-labelledby="createClassModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="createClassModalLabel">Nova Turma</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="create">
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label for="codigo">Código da Turma</label>
+                            <input type="text" class="form-control" id="codigo" name="codigo" required>
+                            <small class="form-text text-muted">Ex: A, B, C, etc.</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="disciplina">Disciplina</label>
+                            <select class="form-control" id="disciplina" name="disciplina" required>
+                                <option value="">Selecione uma disciplina</option>
+                                {% for disciplina in disciplinas %}
+                                    <option value="{{ disciplina.id }}">{{ disciplina.codigo }} - {{ disciplina.nome }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="professor">Professor</label>
+                            <select class="form-control" id="professor" name="professor" required>
+                                <option value="">Selecione um professor</option>
+                                {% for professor in professores %}
+                                    <option value="{{ professor.idProfessor }}">{{ professor.nomeProf }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="semestre">Semestre</label>
+                            <select class="form-control" id="semestre" name="semestre" required>
+                                <option value="">Selecione um semestre</option>
+                                {% for semestre in semestres %}
+                                    <option value="{{ semestre.id }}">{{ semestre }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Salvar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Edit Class Modal -->
+    <div class="modal fade" id="editClassModal" tabindex="-1" role="dialog" aria-labelledby="editClassModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editClassModalLabel">Editar Turma</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="update">
+                    <input type="hidden" name="turma_id" id="edit_turma_id">
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label for="edit_codigo">Código da Turma</label>
+                            <input type="text" class="form-control" id="edit_codigo" name="codigo" required>
+                            <small class="form-text text-muted">Ex: A, B, C, etc.</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="edit_disciplina">Disciplina</label>
+                            <select class="form-control" id="edit_disciplina" name="disciplina" required>
+                                <option value="">Selecione uma disciplina</option>
+                                {% for disciplina in disciplinas %}
+                                    <option value="{{ disciplina.id }}">{{ disciplina.codigo }} - {{ disciplina.nome }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="edit_professor">Professor</label>
+                            <select class="form-control" id="edit_professor" name="professor" required>
+                                <option value="">Selecione um professor</option>
+                                {% for professor in professores %}
+                                    <option value="{{ professor.idProfessor }}">{{ professor.nomeProf }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="edit_semestre">Semestre</label>
+                            <select class="form-control" id="edit_semestre" name="semestre" required>
+                                <option value="">Selecione um semestre</option>
+                                {% for semestre in semestres %}
+                                    <option value="{{ semestre.id }}">{{ semestre }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Salvar Alterações</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Delete Class Modal -->
+    <div class="modal fade" id="deleteClassModal" tabindex="-1" role="dialog" aria-labelledby="deleteClassModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="deleteClassModalLabel">Confirmar Exclusão</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <p>Tem certeza que deseja excluir a turma <strong id="delete_class_name"></strong>?</p>
+                    <p class="text-danger">Esta ação excluirá todas as atividades e avaliações associadas a esta turma!</p>
+                </div>
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="delete">
+                    <input type="hidden" name="turma_id" id="delete_turma_id">
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-danger">Excluir</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script>
+        // Edit Class
+        $('.edit-class').click(function() {
+            var id = $(this).data('id');
+            var codigo = $(this).data('codigo');
+            var disciplina = $(this).data('disciplina');
+            var professor = $(this).data('professor');
+            var semestre = $(this).data('semestre');
+            
+            $('#edit_turma_id').val(id);
+            $('#edit_codigo').val(codigo);
+            $('#edit_disciplina').val(disciplina);
+            $('#edit_professor').val(professor);
+            $('#edit_semestre').val(semestre);
+        });
+        
+        // Delete Class
+        $('.delete-class').click(function() {
+            var id = $(this).data('id');
+            var nome = $(this).data('nome');
+            
+            $('#delete_turma_id').val(id);
+            $('#delete_class_name').text(nome);
+        });
+    </script>
+</body>
+</html>

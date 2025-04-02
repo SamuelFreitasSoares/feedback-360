@@ -1,0 +1,17 @@
+[Unit]
+Description=Feedback 360 Gunicorn daemon
+After=network.target
+
+[Service]
+User=www-data
+Group=www-data
+WorkingDirectory=/path/to/feedback-360
+ExecStart=/path/to/your/venv/bin/gunicorn \
+    --access-logfile - \
+    --workers 3 \
+    --bind unix:/path/to/feedback-360/feedback360.sock \
+    FeedBack360.wsgi:application
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

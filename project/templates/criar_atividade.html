@@ -7,6 +7,7 @@
     <title>Criar Atividade - Feedback 360°</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <link rel="stylesheet" href="{% static 'css/main.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
 </head>
 <body>
     <div class="header">
@@ -18,21 +19,32 @@
             <a href="{% url 'notas' %}">Notas</a>
             <a href="{% url 'disciplinas' %}">Disciplinas</a>
             <a href="{% url 'perfil' %}">Perfil</a>
+            {% if user_type == 'admin' %}
+                <a href="{% url 'admin_dashboard' %}">Admin</a>
+            {% endif %}
             <a href="{% url 'logout' %}">Sair</a>
         </div>
     </div>
     
     <div class="container mt-4">
-        <nav aria-label="breadcrumb">
-            <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="{% url 'atividades' %}">Atividades</a></li>
-                <li class="breadcrumb-item active">Criar Atividade</li>
-            </ol>
-        </nav>
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+        
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>Criar Nova Atividade</h1>
+            <a href="{% url 'atividades' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Voltar para Atividades
+            </a>
+        </div>
         
         <div class="card">
-            <div class="card-header">
-                <h2>Criar Nova Atividade</h2>
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">Informações da Atividade</h4>
             </div>
             <div class="card-body">
                 <form method="post">
@@ -40,17 +52,12 @@
                     
                     <div class="form-group">
                         <label for="titulo">Título da Atividade</label>
-                        <input type="text" class="form-control" id="titulo" name="titulo" required>
+                        <input type="text" class="form-control" id="titulo" name="titulo" placeholder="Ex: Projeto Final" required>
                     </div>
                     
                     <div class="form-group">
                         <label for="descricao">Descrição</label>
-                        <textarea class="form-control" id="descricao" name="descricao" rows="5" required></textarea>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="data_entrega">Data de Entrega</label>
-                        <input type="date" class="form-control" id="data_entrega" name="data_entrega" required>
+                        <textarea class="form-control" id="descricao" name="descricao" rows="5" placeholder="Detalhe a atividade, objetivos e outras informações relevantes" required></textarea>
                     </div>
                     
                     <div class="form-group">
@@ -64,8 +71,33 @@
                     </div>
                     
                     <div class="form-group">
-                        <button type="submit" class="btn btn-primary btn-lg">Criar Atividade</button>
-                        <a href="{% url 'atividades' %}" class="btn btn-secondary btn-lg ml-2">Cancelar</a>
+                        <label for="data_entrega">Data de Entrega</label>
+                        <input type="date" class="form-control" id="data_entrega" name="data_entrega" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="competencias">Competências a serem avaliadas</label>
+                        <select class="form-control select2" id="competencias" name="competencias" multiple required>
+                            {% for competencia in competencias %}
+                                <option value="{{ competencia.id }}">{{ competencia.nome }} - {{ competencia.descricao|truncatechars:50 }}</option>
+                            {% endfor %}
+                        </select>
+                        <small class="form-text text-muted">Selecione as competências que serão avaliadas nesta atividade. Segure ctrl e clique para selecionar mais de uma competência. </small>
+                        <div class="d-flex justify-content-end mt-2">
+                            <a href="{% url 'competencias' %}" class="btn btn-sm btn-outline-primary" target="_blank">
+                                <i class="fas fa-plus-circle"></i> Gerenciar Competências
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> Após criar a atividade, você poderá adicionar grupos para permitir avaliações 360° entre os alunos. 
+                    </div>
+                    
+                    <div class="d-flex justify-content-end">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Criar Atividade
+                        </button>
                     </div>
                 </form>
             </div>

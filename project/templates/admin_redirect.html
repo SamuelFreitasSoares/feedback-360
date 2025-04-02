@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Redirecionando...</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background-color: #f8f9fa;
+        }
+        .redirect-card {
+            max-width: 500px;
+            padding: 30px;
+            text-align: center;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="redirect-card">
+        <h2 class="mb-4">Redirecionando para o Admin</h2>
+        <div class="spinner-border text-primary mb-4" role="status">
+            <span class="sr-only">Carregando...</span>
+        </div>
+        <p>Você está sendo redirecionado para o painel administrativo personalizado...</p>
+        <p class="text-muted">Se você não for redirecionado automaticamente, <a href="{% url 'admin_dashboard' %}">clique aqui</a>.</p>
+    </div>
+    
+    <script>
+        // Redirect after 2 seconds
+        setTimeout(function() {
+            window.location.href = "{% url 'admin_dashboard' %}";
+        }, 2000);
+    </script>
+</body>
+</html>

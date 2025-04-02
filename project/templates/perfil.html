@@ -18,6 +18,9 @@
             <a href="{% url 'notas' %}">Notas</a>
             <a href="{% url 'disciplinas' %}">Disciplinas</a>
             <a href="{% url 'perfil' %}" class="active">Perfil</a>
+            {% if user_type == 'admin' %}
+                <a href="{% url 'admin_dashboard' %}">Admin</a>
+            {% endif %}
             <a href="{% url 'logout' %}">Sair</a>
         </div>
     </div>
@@ -81,6 +84,19 @@
                                         <th>Curso:</th>
                                         <td>{{ user_data.curso.nome }}</td>
                                     </tr>
+                                {% elif user_type == 'admin' %}
+                                    <tr>
+                                        <th>Nome:</th>
+                                        <td>{{ user_data.nomeAdmin }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Email:</th>
+                                        <td>{{ user_data.emailAdmin }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Função:</th>
+                                        <td>Administrador</td>
+                                    </tr>
                                 {% endif %}
                             </tbody>
                         </table>
@@ -120,5 +136,9 @@
             </div>
         </div>
     </div>
+    
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 </body>
 </html>

@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+
+{% block title %}Notificações - Feedback 360°{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h4>Notificações</h4>
+                {% if nao_lidas > 0 %}
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="marcar_todas_como_lidas" value="1">
+                    <button type="submit" class="btn btn-sm btn-outline-primary">Marcar todas como lidas</button>
+                </form>
+                {% endif %}
+            </div>
+            <div class="card-body">
+                {% if notificacoes %}
+                    <div class="list-group">
+                        {% for notificacao in notificacoes %}
+                            <div class="list-group-item {% if not notificacao.lida %}list-group-item-action active{% endif %}">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h5 class="mb-1">
+                                        {% if notificacao.tipo == 'info' %}
+                                            <i class="fas fa-info-circle"></i>
+                                        {% elif notificacao.tipo == 'warning' %}
+                                            <i class="fas fa-exclamation-triangle"></i>
+                                        {% elif notificacao.tipo == 'success' %}
+                                            <i class="fas fa-check-circle"></i>
+                                        {% elif notificacao.tipo == 'danger' %}
+                                            <i class="fas fa-times-circle"></i>
+                                        {% endif %}
+                                        {{ notificacao.titulo }}
+                                    </h5>
+                                    <small>{{ notificacao.data_criacao|date:"d/m/Y H:i" }}</small>
+                                </div>
+                                <p class="mb-1">{{ notificacao.mensagem }}</p>
+                                <div class="d-flex justify-content-between mt-2">
+                                    <div>
+                                        {% if not notificacao.lida %}
+                                            <span class="badge badge-light">Não lida</span>
+                                        {% endif %}
+                                    </div>
+                                    <div>
+                                        {% if notificacao.link %}
+                                            <a href="{{ notificacao.link }}" class="btn btn-sm btn-primary">
+                                                <i class="fas fa-external-link-alt"></i> Abrir link
+                                            </a>
+                                        {% endif %}
+                                        
+                                        {% if not notificacao.lida %}
+                                            <a href="{% url 'marcar_notificacao_como_lida' notificacao.id %}" class="btn btn-sm btn-success">
+                                                <i class="fas fa-check"></i> Marcar como lida
+                                            </a>
+                                        {% endif %}
+                                        
+                                        <form method="post" action="{% url 'excluir_notificacao' notificacao.id %}" class="d-inline">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Tem certeza que deseja excluir esta notificação?')">
+                                                <i class="fas fa-trash"></i> Excluir
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> Você não tem notificações.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

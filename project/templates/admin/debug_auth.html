@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    {% load static %}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Authentication - Feedback 360°</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{% static 'css/main.css' %}">
+</head>
+<body>
+    <div class="header">
+        <p class="logo"><em>Inatel</em></p>
+
+        <div class="links">
+            <a href="{% url 'home' %}">Home</a>
+            <a href="{% url 'admin_dashboard' %}">Dashboard</a>
+            <a href="{% url 'admin_users' %}">Usuários</a>
+            <a href="{% url 'admin_courses' %}">Cursos</a>
+            <a href="{% url 'admin_disciplines' %}">Disciplinas</a>
+            <a href="{% url 'admin_classes' %}">Turmas</a>
+            <a href="{% url 'admin_import_users' %}">Importar</a>
+            <a href="{% url 'debug_auth' %}" class="active">Debug</a>
+            <a href="{% url 'logout' %}">Sair</a>
+        </div>
+    </div>
+    
+    <div class="container mt-4">
+        <h1>Debug Authentication</h1>
+        
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+        
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h4>Reset User Password</h4>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="reset_password">
+                    <div class="form-group">
+                        <label for="email">Email</label>
+                        <input type="email" class="form-control" id="email" name="email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="password">New Password</label>
+                        <input type="text" class="form-control" id="password" name="password" value="123456" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="user_role">User Type</label>
+                        <select class="form-control" id="user_role" name="user_role" required>
+                            <option value="aluno">Aluno</option>
+                            <option value="professor">Professor</option>
+                            <option value="coordenador">Coordenador</option>
+                            <option value="admin">Admin</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Reset Password</button>
+                </form>
+            </div>
+        </div>
+        
+        <div class="card mb-4">
+            <div class="card-header bg-warning text-white">
+                <h4>Generate Password Reset Link</h4>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="generate_reset_link">
+                    <div class="form-group">
+                        <label for="reset_email">Email</label>
+                        <input type="email" class="form-control" id="reset_email" name="reset_email" required>
+                    </div>
+                    <button type="submit" class="btn btn-warning">Generate Reset Link</button>
+                </form>
+                
+                {% if reset_link %}
+                <div class="alert alert-success mt-3">
+                    <p><strong>Reset link generated:</strong></p>
+                    <input type="text" class="form-control" value="{{ reset_link }}" readonly onclick="this.select()">
+                    <div class="mt-2">
+                        <a href="{{ reset_link }}" class="btn btn-sm btn-primary" target="_blank">Open Link</a>
+                        <button class="btn btn-sm btn-secondary" onclick="copyToClipboard('{{ reset_link }}')">Copy Link</button>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h4>Sample Users</h4>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <p>Here are some sample users in your database. You can use these emails to test login or reset passwords.</p>
+                </div>
+                
+                <div class="table-responsive">
+                    <table class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Type</th>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Password Hash</th>
+                                <th>ID</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for user in samples %}
+                                <tr>
+                                    <td>{{ user.type }}</td>
+                                    <td>{{ user.name }}</td>
+                                    <td>{{ user.email }}</td>
+                                    <td><small>{{ user.password_hash }}</small></td>
+                                    <td>{{ user.id }}</td>
+                                </tr>
+                            {% empty %}
+                                <tr>
+                                    <td colspan="5" class="text-center">No users found in the database.</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="mt-3">
+                    <h5>Login Command</h5>
+                    <p>You can also use this command to reset a password:</p>
+                    <pre>python manage.py reset_password user@email.com new_password --type=admin</pre>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script>
+        function copyToClipboard(text) {
+            var tempInput = document.createElement("input");
+            tempInput.value = text;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            document.execCommand("copy");
+            document.body.removeChild(tempInput);
+            alert("Link copied to clipboard!");
+        }
+    </script>
+</body>
+</html>

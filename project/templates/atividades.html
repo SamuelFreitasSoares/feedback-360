@@ -7,6 +7,7 @@
     <title>Atividades - Feedback 360°</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <link rel="stylesheet" href="{% static 'css/main.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
 </head>
 <body>
     <div class="header">
@@ -18,12 +19,22 @@
             <a href="{% url 'notas' %}">Notas</a>
             <a href="{% url 'disciplinas' %}">Disciplinas</a>
             <a href="{% url 'perfil' %}">Perfil</a>
+            {% if user_type == 'admin' %}
+                <a href="{% url 'admin_dashboard' %}">Admin</a>
+            {% endif %}
             <a href="{% url 'logout' %}">Sair</a>
         </div>
     </div>
     
     <div class="container mt-4">
-        <h1>Atividades</h1>
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>Atividades</h1>
+            {% if user_type == 'professor' %}
+                <a href="{% url 'criar_atividade' %}" class="btn btn-primary">
+                    <i class="fas fa-plus-circle"></i> Nova Atividade
+                </a>
+            {% endif %}
+        </div>
         
         {% if messages %}
             {% for message in messages %}
@@ -33,38 +44,92 @@
             {% endfor %}
         {% endif %}
         
-        {% if user_type == 'professor' or user_type == 'admin' %}
-            <div class="mb-4">
-                <a href="{% url 'criar_atividade' %}" class="btn btn-primary">Criar Nova Atividade</a>
-            </div>
-        {% endif %}
-        
-        {% if atividades %}
-            <div class="card-deck">
-                {% for atividade in atividades %}
-                    <div class="card mb-4">
-                        <div class="card-body">
-                            <h5 class="card-title">{{ atividade.titulo }}</h5>
-                            <h6 class="card-subtitle mb-2 text-muted">{{ atividade.turma.disciplina.nome }} ({{ atividade.turma.codigo }})</h6>
-                            <p class="card-text">Data de entrega: {{ atividade.dataEntrega }}</p>
-                            
-                            {% if user_type == 'aluno' and atividade.grupo %}
-                                <p class="card-text">Grupo: {{ atividade.grupo.nome }}</p>
-                                {% if atividade.pendente %}
+        {% if user_type == 'aluno' %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h4>Avaliações Pendentes</h4>
+                </div>
+                <div class="card-body">
+                    {% with has_pending=False %}
+                        {% for atividade in atividades %}
+                            {% if atividade.grupo and atividade.pendente %}
+                                {% if forloop.first %}
                                     <div class="alert alert-warning">
-                                        Você possui avaliações pendentes nesta atividade!
+                                        <i class="fas fa-exclamation-triangle"></i> Você tem avaliações pendentes nas seguintes atividades:
+                                    </div>
+                                    <div class="list-group">
+                                {% endif %}
+                                {% with True as has_pending %}
+                                    <a href="{% url 'atividade_detalhe' atividade.id %}" class="list-group-item list-group-item-action list-group-item-warning">
+                                        <div class="d-flex w-100 justify-content-between">
+                                            <h5 class="mb-1">{{ atividade.titulo }}</h5>
+                                            <span class="badge badge-warning">Pendente</span>
+                                        </div>
+                                        <p class="mb-1">{{ atividade.turma.disciplina.nome }} - Turma {{ atividade.turma.codigo }}</p>
+                                        <small>Grupo: {{ atividade.grupo.nome }}</small>
+                                    </a>
+                                {% endwith %}
+                                {% if forloop.last %}
                                     </div>
                                 {% endif %}
                             {% endif %}
-                            
-                            <a href="{% url 'atividade_detalhe' atividade.id %}" class="btn btn-info">Ver Detalhes</a>
-                        </div>
-                    </div>
-                {% endfor %}
+                        {% endfor %}
+                        
+                        {% if not has_pending %}
+                            <div class="alert alert-success">
+                                <i class="fas fa-check-circle"></i> Você não tem avaliações pendentes.
+                            </div>
+                        {% endif %}
+                    {% endwith %}
+                </div>
             </div>
-        {% else %}
-            <p>Nenhuma atividade encontrada.</p>
         {% endif %}
+        
+        <div class="card">
+            <div class="card-header">
+                <h4>Todas as Atividades</h4>
+            </div>
+            <div class="card-body">
+                {% if atividades %}
+                    <div class="row">
+                        {% for atividade in atividades %}
+                            <div class="col-md-6 mb-4">
+                                <div class="card h-100">
+                                    <div class="card-header d-flex justify-content-between align-items-center">
+                                        <h5 class="mb-0">{{ atividade.titulo }}</h5>
+                                        {% if user_type == 'aluno' and atividade.grupo and atividade.pendente %}
+                                            <span class="badge badge-warning">Avaliação Pendente</span>
+                                        {% endif %}
+                                    </div>
+                                    <div class="card-body">
+                                        <p><strong>Disciplina:</strong> {{ atividade.turma.disciplina.nome }}</p>
+                                        <p><strong>Turma:</strong> {{ atividade.turma.codigo }}</p>
+                                        <p><strong>Data de Entrega:</strong> {{ atividade.dataEntrega|date:"d/m/Y" }}</p>
+                                        <p>{{ atividade.descricao|truncatechars:100 }}</p>
+                                        
+                                        {% if user_type == 'aluno' and atividade.grupo %}
+                                            <p><strong>Grupo:</strong> {{ atividade.grupo.nome }}</p>
+                                        {% endif %}
+                                        
+                                        <a href="{% url 'atividade_detalhe' atividade.id %}" class="btn btn-primary btn-sm">
+                                            Ver Detalhes
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="alert alert-info">
+                        <p>Nenhuma atividade disponível.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
     </div>
+    
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 </body>
 </html>

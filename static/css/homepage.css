@@ -163,7 +163,31 @@ h1 {
 .cursos-section li {
     padding: 10px 15px;
     background-color: #e9ecef;
+    border-radius: 6px;
     margin-bottom: 8px;
-    border-radius: 4px;
-    color: #343a40;
+    transition: all 0.2s ease;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.cursos-section li:hover {
+    background-color: #d6e4f0;
+    transform: translateY(-2px);
+    box-shadow: 0 3px 5px rgba(0,0,0,0.15);
+}
+
+.cursos-section li a {
+    color: #0056b3;
+    text-decoration: none;
+    width: auto;
+    background-color: transparent;
+    height: auto;
+    display: inline;
+}
+
+.cursos-section li a:hover {
+    text-decoration: underline;
+    background-color: transparent;
 }

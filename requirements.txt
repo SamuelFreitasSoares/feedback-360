@@ -1,5 +1,18 @@
-Django==5.1.7
-pandas==2.1.0
+Django==5.0.3
+pandas==2.2.0
 openpyxl==3.1.2
-matplotlib==3.7.2
-numpy==1.24.3
+matplotlib==3.8.2
+numpy==1.26.3
+psycopg2-binary==2.9.9  # PostgreSQL adapter
+gunicorn==21.2.0  # WSGI server
+whitenoise==6.6.0  # Static files serving
+python-dotenv==1.0.1  # Environment variables
+dj-database-url==2.1.0  # Database URL configuration
+sentry-sdk==1.40.6  # Error tracking
+Pillow==10.2.0  # Image processing
+django-crispy-forms==2.1  # Better form rendering
+crispy-bootstrap4==2023.1  # Bootstrap 4 template pack
+django-filter==24.1  # Filtering querysets
+django-widget-tweaks==1.5.0  # Form field rendering
+django-extensions==3.2.3  # Development utilities
+django-storages==1.14.2  # Cloud storage

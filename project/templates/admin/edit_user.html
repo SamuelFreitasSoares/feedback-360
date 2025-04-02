@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    {% load static %}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editar Usuário - Feedback 360°</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{% static 'css/main.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+</head>
+<body>
+    <div class="header">
+        <p class="logo"><em>Inatel</em></p>
+
+        <div class="links">
+            <a href="{% url 'home' %}">Home</a>
+            <a href="{% url 'admin_dashboard' %}">Dashboard</a>
+            <a href="{% url 'admin_users' %}" class="active">Usuários</a>
+            <a href="{% url 'admin_courses' %}">Cursos</a>
+            <a href="{% url 'admin_disciplines' %}">Disciplinas</a>
+            <a href="{% url 'admin_classes' %}">Turmas</a>
+            <a href="{% url 'admin_import_users' %}">Importar</a>
+            <a href="{% url 'logout' %}">Sair</a>
+        </div>
+    </div>
+    
+    <div class="container mt-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>Editar Usuário</h1>
+            <a href="{% url 'admin_users' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Voltar para Usuários
+            </a>
+        </div>
+        
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+        
+        <div class="card">
+            <div class="card-header">
+                {% if role == 'aluno' %}
+                    <h4>Editando Aluno: {{ user.nomeAluno }}</h4>
+                {% elif role == 'professor' %}
+                    <h4>Editando Professor: {{ user.nomeProf }}</h4>
+                {% elif role == 'coordenador' %}
+                    <h4>Editando Coordenador: {{ user.nomeCoord }}</h4>
+                {% elif role == 'admin' %}
+                    <h4>Editando Administrador: {{ user.nomeAdmin }}</h4>
+                {% endif %}
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="form-group">
+                        <label for="nome">Nome</label>
+                        {% if role == 'aluno' %}
+                            <input type="text" class="form-control" id="nome" name="nome" value="{{ user.nomeAluno }}" required>
+                        {% elif role == 'professor' %}
+                            <input type="text" class="form-control" id="nome" name="nome" value="{{ user.nomeProf }}" required>
+                        {% elif role == 'coordenador' %}
+                            <input type="text" class="form-control" id="nome" name="nome" value="{{ user.nomeCoord }}" required>
+                        {% elif role == 'admin' %}
+                            <input type="text" class="form-control" id="nome" name="nome" value="{{ user.nomeAdmin }}" required>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="email">Email</label>
+                        {% if role == 'aluno' %}
+                            <input type="email" class="form-control" id="email" name="email" value="{{ user.emailAluno }}" required>
+                        {% elif role == 'professor' %}
+                            <input type="email" class="form-control" id="email" name="email" value="{{ user.emailProf }}" required>
+                        {% elif role == 'coordenador' %}
+                            <input type="email" class="form-control" id="email" name="email" value="{{ user.emailCoord }}" required>
+                        {% elif role == 'admin' %}
+                            <input type="email" class="form-control" id="email" name="email" value="{{ user.emailAdmin }}" required>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="senha">Senha (deixe em branco para manter a atual)</label>
+                        <input type="password" class="form-control" id="senha" name="senha" placeholder="Informe apenas se desejar alterar">
+                    </div>
+                    
+                    <!-- Campos específicos para Aluno -->
+                    {% if role == 'aluno' %}
+                        <div class="form-group">
+                            <label for="matricula">Matrícula</label>
+                            <input type="text" class="form-control" id="matricula" name="matricula" value="{{ user.matricula }}" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="curso">Curso</label>
+                            <select class="form-control" id="curso" name="curso" required>
+                                <option value="">Selecione um curso</option>
+                                {% for curso in cursos %}
+                                    <option value="{{ curso.id }}" {% if user.curso.id == curso.id %}selected{% endif %}>{{ curso.nome }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    {% endif %}
+                    
+                    <!-- Campos específicos para Coordenador -->
+                    {% if role == 'coordenador' %}
+                        <div class="form-group">
+                            <label for="curso">Curso</label>
+                            <select class="form-control" id="curso" name="curso" required>
+                                <option value="">Selecione um curso</option>
+                                {% for curso in cursos %}
+                                    <option value="{{ curso.id }}" {% if user.curso and user.curso.id == curso.id %}selected{% endif %}>{{ curso.nome }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    {% endif %}
+                    
+                    <button type="submit" class="btn btn-primary">Salvar Alterações</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>

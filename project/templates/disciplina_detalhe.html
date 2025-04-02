@@ -4,9 +4,10 @@
     {% load static %}
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Detalhes da Disciplina - Feedback 360°</title>
+    <title>{{ disciplina.nome }} - Feedback 360°</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <link rel="stylesheet" href="{% static 'css/main.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
 </head>
 <body>
     <div class="header">
@@ -18,71 +19,113 @@
             <a href="{% url 'notas' %}">Notas</a>
             <a href="{% url 'disciplinas' %}" class="active">Disciplinas</a>
             <a href="{% url 'perfil' %}">Perfil</a>
+            {% if user_type == 'admin' %}
+                <a href="{% url 'admin_dashboard' %}">Admin</a>
+            {% endif %}
             <a href="{% url 'logout' %}">Sair</a>
         </div>
     </div>
     
     <div class="container mt-4">
-        <nav aria-label="breadcrumb">
-            <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="{% url 'disciplinas' %}">Disciplinas</a></li>
-                <li class="breadcrumb-item active">{{ disciplina.nome }}</li>
-            </ol>
-        </nav>
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+        
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>{{ disciplina.nome }}</h1>
+            <a href="{% url 'disciplinas' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Voltar
+            </a>
+        </div>
         
         <div class="card mb-4">
-            <div class="card-header">
-                <h1>{{ disciplina.nome }}</h1>
-                <h6 class="text-muted">Código: {{ disciplina.codigo }}</h6>
-                <h6 class="text-muted">Curso: {{ disciplina.curso.nome }}</h6>
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">Informações da Disciplina</h4>
             </div>
             <div class="card-body">
-                <h4>Turmas</h4>
-                
-                {% if turmas %}
-                    <div class="list-group mb-4">
-                        {% for turma in turmas|dictsort:"codigo" %}
-                            <div class="list-group-item">
-                                <h5 class="mb-1">Turma {{ turma.codigo }}</h5>
-                                <p class="mb-1">Semestre: {{ turma.semestre }}</p>
-                                <p class="mb-1">Professor: {{ turma.professor.nomeProf }}</p>
-                            </div>
-                        {% endfor %}
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Código:</strong> {{ disciplina.codigo }}</p>
+                        <p><strong>Curso:</strong> {{ disciplina.curso.nome }}</p>
                     </div>
-                {% else %}
-                    <p>Nenhuma turma encontrada.</p>
-                {% endif %}
-                
-                <h4>Atividades</h4>
-                
-                {% if atividades %}
-                    <div class="table-responsive">
-                        <table class="table table-striped">
-                            <thead>
-                                <tr>
-                                    <th>Título</th>
-                                    <th>Turma</th>
-                                    <th>Data de Entrega</th>
-                                    <th>Ações</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for atividade in atividades|dictsort:"dataEntrega" %}
-                                    <tr>
-                                        <td>{{ atividade.titulo }}</td>
-                                        <td>{{ atividade.turma.codigo }}</td>
-                                        <td>{{ atividade.dataEntrega }}</td>
-                                        <td>
-                                            <a href="{% url 'atividade_detalhe' atividade.id %}" class="btn btn-info btn-sm">Ver Detalhes</a>
-                                        </td>
-                                    </tr>
+                    <div class="col-md-6">
+                        <p><strong>Total de Turmas:</strong> {{ turmas|length }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h4>Turmas</h4>
+                    </div>
+                    <div class="card-body">
+                        {% if turmas %}
+                            <div class="list-group">
+                                {% for turma in turmas %}
+                                    <div class="list-group-item">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <h5 class="mb-1">Turma {{ turma.codigo }}</h5>
+                                            {% if user_type == 'professor' %}
+                                                <a href="{% url 'admin_class_students' turma.id %}" class="btn btn-sm btn-info">
+                                                    <i class="fas fa-users"></i> Gerenciar Alunos
+                                                </a>
+                                            {% endif %}
+                                            <span class="badge badge-primary badge-pill">{{ turma.matriculas.count }} alunos</span>
+                                        </div>
+                                        <p class="mb-1"><strong>Professor:</strong> {{ turma.professor.nomeProf }}</p>
+                                        <p class="mb-1"><strong>Semestre:</strong> {{ turma.semestre }}</p>
+                                    </div>
                                 {% endfor %}
-                            </tbody>
-                        </table>
+                            </div>
+                        {% else %}
+                            <div class="alert alert-info">
+                                <p>Não há turmas disponíveis para esta disciplina.</p>
+                            </div>
+                        {% endif %}
                     </div>
-                {% else %}
-                    <p>Nenhuma atividade encontrada.</p>
-                {% endif %}
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="card mb-4">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h4>Atividades</h4>
+                        {% if user_type == 'professor' %}
+                            <a href="{% url 'criar_atividade' %}" class="btn btn-sm btn-primary">
+                                <i class="fas fa-plus-circle"></i> Nova Atividade
+                            </a>
+                        {% endif %}
+                    </div>
+                    <div class="card-body">
+                        {% if atividades %}
+                            <div class="list-group">
+                                {% for atividade in atividades %}
+                                    <a href="{% url 'atividade_detalhe' atividade.id %}" class="list-group-item list-group-item-action">
+                                        <div class="d-flex w-100 justify-content-between">
+                                            <h5 class="mb-1">{{ atividade.titulo }}</h5>
+                                            <small class="text-muted">Turma {{ atividade.turma.codigo }}</small>
+                                        </div>
+                                        <p class="mb-1">{{ atividade.descricao|truncatechars:100 }}</p>
+                                        <small class="text-{% if atividade.dataEntrega < today %}danger{% else %}success{% endif %}">
+                                            Data de Entrega: {{ atividade.dataEntrega|date:"d/m/Y" }}
+                                        </small>
+                                    </a>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="alert alert-info">
+                                <p>Não há atividades cadastradas para esta disciplina.</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
             </div>
         </div>
     </div>

@@ -7,6 +7,7 @@
     <title>Notas - Feedback 360°</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <link rel="stylesheet" href="{% static 'css/main.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
@@ -19,6 +20,9 @@
             <a href="{% url 'notas' %}" class="active">Notas</a>
             <a href="{% url 'disciplinas' %}">Disciplinas</a>
             <a href="{% url 'perfil' %}">Perfil</a>
+            {% if user_type == 'admin' %}
+                <a href="{% url 'admin_dashboard' %}">Admin</a>
+            {% endif %}
             <a href="{% url 'logout' %}">Sair</a>
         </div>
     </div>
@@ -162,89 +166,318 @@
                 </script>
             {% else %}
                 <div class="alert alert-info">
-                    Você ainda não recebeu nenhuma avaliação.
+                    <p>Você ainda não recebeu nenhuma avaliação.</p>
                 </div>
             {% endif %}
+            
         {% elif user_type == 'professor' %}
             <div class="row mb-4">
                 <div class="col">
-                    <h3>Turmas</h3>
-                    <div class="list-group">
-                        {% for turma in turmas %}
-                            <a href="#" class="list-group-item list-group-item-action">
-                                {{ turma.disciplina.nome }} - Turma {{ turma.codigo }} ({{ turma.semestre }})
-                            </a>
-                        {% endfor %}
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>Suas Turmas</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="list-group">
+                                {% for turma in turmas %}
+                                    <a href="#" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                                        {{ turma.disciplina.nome }} - Turma {{ turma.codigo }} ({{ turma.semestre }})
+                                        <span class="badge badge-primary badge-pill">{{ turma.matriculas.count }} alunos</span>
+                                    </a>
+                                {% empty %}
+                                    <div class="alert alert-info">
+                                        <p>Você não possui turmas atribuídas.</p>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
             
             {% if notas %}
-                <h3>Avaliações Recentes</h3>
-                <div class="table-responsive">
-                    <table class="table table-striped">
-                        <thead>
-                            <tr>
-                                <th>Aluno</th>
-                                <th>Disciplina</th>
-                                <th>Atividade</th>
-                                <th>Competência</th>
-                                <th>Nota</th>
-                                <th>Data</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for nota in notas|slice:":20" %}
-                                <tr>
-                                    <td>{{ nota.avaliacao.avaliado_aluno.nomeAluno }}</td>
-                                    <td>{{ nota.avaliacao.atividade.turma.disciplina.nome }}</td>
-                                    <td>{{ nota.avaliacao.atividade.titulo }}</td>
-                                    <td>{{ nota.competencia.nome }}</td>
-                                    <td>{{ nota.nota }}/5</td>
-                                    <td>{{ nota.dataAvaliacao|date:"d/m/Y" }}</td>
-                                </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Avaliações Recentes</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Aluno</th>
+                                        <th>Disciplina</th>
+                                        <th>Atividade</th>
+                                        <th>Competência</th>
+                                        <th>Nota</th>
+                                        <th>Data</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for nota in notas|slice:":20" %}
+                                        <tr>
+                                            <td>{{ nota.avaliacao.avaliado_aluno.nomeAluno }}</td>
+                                            <td>{{ nota.avaliacao.atividade.turma.disciplina.nome }}</td>
+                                            <td>{{ nota.avaliacao.atividade.titulo }}</td>
+                                            <td>{{ nota.competencia.nome }}</td>
+                                            <td>{{ nota.nota }}/5</td>
+                                            <td>{{ nota.dataAvaliacao|date:"d/m/Y" }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            {% else %}
+                <div class="alert alert-info">
+                    <p>Não há avaliações registradas para suas turmas.</p>
                 </div>
             {% endif %}
+            
         {% elif user_type == 'coordenador' %}
-            <div class="row mb-4">
-                <div class="col">
-                    <h3>Cursos</h3>
-                    <div class="list-group">
-                        {% for curso in cursos %}
-                            <a href="#" class="list-group-item list-group-item-action">
-                                {{ curso.nome }}
-                            </a>
-                        {% endfor %}
+            {% if cursos %}
+                <div class="row mb-4">
+                    <div class="col">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3>Cursos</h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="list-group">
+                                    {% for curso in cursos %}
+                                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <h5>{{ curso.nome }}</h5>
+                                            </div>
+                                            <div>
+                                                <span class="badge badge-primary badge-pill">{{ curso.disciplinas.count }} disciplinas</span>
+                                                <span class="badge badge-info badge-pill">{{ curso.alunos.count }} alunos</span>
+                                            </div>
+                                        </div>
+                                    {% empty %}
+                                        <div class="alert alert-info">
+                                            <p>Você não está associado a nenhum curso.</p>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h4>Desempenho por Disciplina</h4>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="barChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h4>Desempenho por Turma</h4>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="pieChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h4>Disciplinas do Curso</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="list-group">
+                            {% for disciplina in disciplinas %}
+                                <a href="{% url 'disciplina_detalhe' disciplina.id %}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                                    {{ disciplina.nome }} ({{ disciplina.codigo }})
+                                    <span class="badge badge-primary badge-pill">{{ disciplina.turmas.count }} turmas</span>
+                                </a>
+                            {% empty %}
+                                <div class="alert alert-info">
+                                    <p>Não há disciplinas cadastradas para este curso.</p>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                
+                {% if notas %}
+                    <div class="card mt-4">
+                        <div class="card-header">
+                            <h4>Avaliações Recentes</h4>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>Aluno</th>
+                                            <th>Disciplina</th>
+                                            <th>Atividade</th>
+                                            <th>Competência</th>
+                                            <th>Nota</th>
+                                            <th>Data</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for nota in notas|slice:":20" %}
+                                            <tr>
+                                                <td>{{ nota.avaliacao.avaliado_aluno.nomeAluno }}</td>
+                                                <td>{{ nota.avaliacao.atividade.turma.disciplina.nome }}</td>
+                                                <td>{{ nota.avaliacao.atividade.titulo }}</td>
+                                                <td>{{ nota.competencia.nome }}</td>
+                                                <td>{{ nota.nota }}/5</td>
+                                                <td>{{ nota.dataAvaliacao|date:"d/m/Y" }}</td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                
+                    <script>
+                        // Bar chart for disciplines
+                        const disciplinasData = JSON.parse('{{ disciplinas_data|safe|escapejs }}');
+                        
+                        if (disciplinasData.labels && disciplinasData.labels.length > 0) {
+                            const barChart = new Chart(
+                                document.getElementById('barChart'),
+                                {
+                                    type: 'bar',
+                                    data: {
+                                        labels: disciplinasData.labels,
+                                        datasets: [{
+                                            label: 'Média por Disciplina',
+                                            data: disciplinasData.data,
+                                            backgroundColor: 'rgba(54, 162, 235, 0.7)',
+                                            borderColor: 'rgb(54, 162, 235)',
+                                            borderWidth: 1
+                                        }]
+                                    },
+                                    options: {
+                                        scales: {
+                                            y: {
+                                                beginAtZero: true,
+                                                max: 5
+                                            }
+                                        }
+                                    }
+                                }
+                            );
+                        }
+                        
+                        // Pie chart for turmas
+                        const turmasData = JSON.parse('{{ turmas_data|safe|escapejs }}');
+                        
+                        if (turmasData.labels && turmasData.labels.length > 0) {
+                            const pieColors = [
+                                'rgba(255, 99, 132, 0.7)',
+                                'rgba(54, 162, 235, 0.7)',
+                                'rgba(255, 206, 86, 0.7)',
+                                'rgba(75, 192, 192, 0.7)',
+                                'rgba(153, 102, 255, 0.7)',
+                                'rgba(255, 159, 64, 0.7)'
+                            ];
+                            
+                            const pieChart = new Chart(
+                                document.getElementById('pieChart'),
+                                {
+                                    type: 'pie',
+                                    data: {
+                                        labels: turmasData.labels,
+                                        datasets: [{
+                                            data: turmasData.data,
+                                            backgroundColor: pieColors
+                                        }]
+                                    },
+                                    options: {
+                                        responsive: true,
+                                        plugins: {
+                                            legend: {
+                                                position: 'right'
+                                            },
+                                            tooltip: {
+                                                callbacks: {
+                                                    label: function(context) {
+                                                        return `${context.label}: ${context.raw.toFixed(2)}/5`;
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            );
+                        }
+                    </script>
+                {% endif %}
+            {% else %}
+                <div class="alert alert-info">
+                    <p>Você não está associado a nenhum curso.</p>
+                </div>
+            {% endif %}
+            
+        {% elif user_type == 'admin' %}
+            <div class="alert alert-info">
+                <h4><i class="fas fa-info-circle"></i> Informação</h4>
+                <p>Como administrador, você pode visualizar todas as informações do sistema e gerenciar configurações globais através do painel administrativo.</p>
+                <a href="{% url 'admin_dashboard' %}" class="btn btn-primary">Ir para o Dashboard Administrativo</a>
             </div>
             
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="card">
-                        <div class="card-header">
-                            <h4>Desempenho por Disciplina</h4>
-                        </div>
-                        <div class="card-body">
-                            <canvas id="barChart"></canvas>
-                        </div>
-                    </div>
+            <div class="card">
+                <div class="card-header">
+                    <h4>Visão Geral das Avaliações</h4>
                 </div>
-                <div class="col-md-6">
-                    <div class="card">
-                        <div class="card-header">
-                            <h4>Desempenho por Turma</h4>
+                <div class="card-body">
+                    {% if notas %}
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Aluno</th>
+                                        <th>Avaliador</th>
+                                        <th>Disciplina</th>
+                                        <th>Atividade</th>
+                                        <th>Competência</th>
+                                        <th>Nota</th>
+                                        <th>Data</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for nota in notas %}
+                                        <tr>
+                                            <td>{{ nota.avaliacao.avaliado_aluno.nomeAluno }}</td>
+                                            <td>{{ nota.avaliacao.avaliador_aluno.nomeAluno }}</td>
+                                            <td>{{ nota.avaliacao.atividade.turma.disciplina.nome }}</td>
+                                            <td>{{ nota.avaliacao.atividade.titulo }}</td>
+                                            <td>{{ nota.competencia.nome }}</td>
+                                            <td>{{ nota.nota }}/5</td>
+                                            <td>{{ nota.dataAvaliacao|date:"d/m/Y" }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
                         </div>
-                        <div class="card-body">
-                            <canvas id="pieChart"></canvas>
+                    {% else %}
+                        <div class="alert alert-warning">
+                            <p>Ainda não há avaliações registradas no sistema.</p>
                         </div>
-                    </div>
+                    {% endif %}
                 </div>
             </div>
         {% endif %}
     </div>
+    
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 </body>
 </html>

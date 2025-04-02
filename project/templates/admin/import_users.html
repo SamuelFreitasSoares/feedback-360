@@ -16,13 +16,20 @@
         <div class="links">
             <a href="{% url 'home' %}">Home</a>
             <a href="{% url 'admin_dashboard' %}">Dashboard</a>
-            <a href="{% url 'admin_import_users' %}" class="active">Importar Usuários</a>
+            <a href="{% url 'admin_users' %}">Usuários</a>
+            <a href="{% url 'admin_courses' %}">Cursos</a>
+            <a href="{% url 'admin_disciplines' %}">Disciplinas</a>
+            <a href="{% url 'admin_classes' %}">Turmas</a>
+            <a href="{% url 'admin_semesters' %}">Semestres</a>
+            <a href="{% url 'admin_import_users' %}" class="active">Importar</a>
             <a href="{% url 'logout' %}">Sair</a>
         </div>
     </div>
     
     <div class="container mt-4">
-        <h1>Importar Usuários</h1>
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>Importação de Usuários</h1>
+        </div>
         
         {% if messages %}
             {% for message in messages %}
@@ -32,97 +39,134 @@
             {% endfor %}
         {% endif %}
         
-        <div class="card">
-            <div class="card-header">
-                <h5 class="card-title">Upload de Arquivo</h5>
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h4>Importar Usuários a partir de Arquivo CSV</h4>
+                    </div>
+                    <div class="card-body">
+                        <form method="post" enctype="multipart/form-data">
+                            {% csrf_token %}
+                            
+                            <div class="form-group">
+                                <label for="user_type">Tipo de Usuário</label>
+                                <select class="form-control" id="user_type" name="user_type" required>
+                                    <option value="">Selecione o tipo de usuário</option>
+                                    <option value="aluno">Alunos</option>
+                                    <option value="professor">Professores</option>
+                                    <option value="coordenador">Coordenadores</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="file">Arquivo CSV</label>
+                                <div class="custom-file">
+                                    <input type="file" class="custom-file-input" id="file" name="file" accept=".csv" required>
+                                    <label class="custom-file-label" for="file">Escolher arquivo</label>
+                                </div>
+                                <small class="form-text text-muted">Selecione um arquivo CSV com os dados dos usuários.</small>
+                            </div>
+                            
+                            <div class="alert alert-info" role="alert">
+                                <h5 class="alert-heading"><i class="fas fa-info-circle"></i> Formato do Arquivo</h5>
+                                <p>O arquivo CSV deve seguir o formato específico para cada tipo de usuário:</p>
+                                
+                                <p><strong>Alunos:</strong> nome,email,matricula,curso_id</p>
+                                <p><strong>Professores:</strong> nome,email</p>
+                                <p><strong>Coordenadores:</strong> nome,email,curso_id</p>
+                                
+                                <p>A primeira linha do arquivo será ignorada (cabeçalhos). A senha padrão para todos os usuários importados será "123456".</p>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-upload"></i> Importar Usuários
+                            </button>
+                        </form>
+                    </div>
+                </div>
             </div>
-            <div class="card-body">
-                <p>Selecione um arquivo CSV ou Excel contendo os dados dos usuários.</p>
-                
-                <form method="post" enctype="multipart/form-data">
-                    {% csrf_token %}
-                    
-                    <div class="form-group">
-                        <label for="import_type">Tipo de Usuário</label>
-                        <select class="form-control" id="import_type" name="import_type" required>
-                            <option value="">Selecione o tipo de usuário</option>
-                            <option value="alunos">Alunos</option>
-                            <option value="professores">Professores</option>
-                            <option value="coordenadores">Coordenadores</option>
-                        </select>
+            
+            <div class="col-md-4">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h4>Instruções</h4>
                     </div>
-                    
-                    <div class="form-group">
-                        <label for="file">Arquivo</label>
-                        <div class="custom-file">
-                            <input type="file" class="custom-file-input" id="file" name="file" required>
-                            <label class="custom-file-label" for="file">Escolher arquivo</label>
-                        </div>
-                        <small class="form-text text-muted">Formatos aceitos: .csv, .xls, .xlsx</small>
-                    </div>
-                    
-                    <div class="alert alert-info">
-                        <h6><i class="fas fa-info-circle"></i> Estrutura esperada dos arquivos:</h6>
-                        <div class="table-responsive">
-                            <table class="table table-sm table-bordered">
-                                <thead class="thead-light">
-                                    <tr>
-                                        <th colspan="4">Alunos</th>
-                                    </tr>
-                                    <tr>
-                                        <th>nome</th>
-                                        <th>email</th>
-                                        <th>matricula</th>
-                                        <th>curso_id</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr>
-                                        <td>João Silva</td>
-                                        <td>joao@email.com</td>
-                                        <td>12345</td>
-                                        <td>1</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
+                    <div class="card-body">
+                        <ol>
+                            <li>Selecione o tipo de usuário que deseja importar</li>
+                            <li>Prepare um arquivo CSV com os dados no formato especificado</li>
+                            <li>Faça upload do arquivo</li>
+                            <li>Verifique os resultados da importação</li>
+                        </ol>
                         
-                        <div class="table-responsive mt-3">
-                            <table class="table table-sm table-bordered">
-                                <thead class="thead-light">
-                                    <tr>
-                                        <th colspan="2">Professores</th>
-                                    </tr>
-                                    <tr>
-                                        <th>nome</th>
-                                        <th>email</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr>
-                                        <td>Maria Souza</td>
-                                        <td>maria@email.com</td>
-                                    </tr>
-                                </tbody>
-                            </table>
+                        <div class="alert alert-warning mt-3">
+                            <i class="fas fa-exclamation-triangle"></i> Certifique-se de que:
+                            <ul class="mb-0 mt-2">
+                                <li>Os IDs de curso existam no sistema</li>
+                                <li>Os emails sejam únicos</li>
+                                <li>As matrículas de alunos sejam únicas</li>
+                            </ul>
                         </div>
                     </div>
-                    
-                    <button type="submit" class="btn btn-primary">Importar</button>
-                    <a href="{% url 'admin_dashboard' %}" class="btn btn-secondary">Voltar</a>
-                </form>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <h4>Modelo de Arquivo</h4>
+                    </div>
+                    <div class="card-body">
+                        <p>Baixe um modelo de arquivo CSV para cada tipo de usuário:</p>
+                        
+                        <div class="d-flex flex-column">
+                            <a href="{% static 'csv_templates/alunos_template.csv' %}" class="btn btn-outline-primary mb-2">
+                                <i class="fas fa-file-download"></i> Modelo para Alunos
+                            </a>
+                            <a href="{% static 'csv_templates/professores_template.csv' %}" class="btn btn-outline-primary mb-2">
+                                <i class="fas fa-file-download"></i> Modelo para Professores
+                            </a>
+                            <a href="{% static 'csv_templates/coordenadores_template.csv' %}" class="btn btn-outline-primary">
+                                <i class="fas fa-file-download"></i> Modelo para Coordenadores
+                            </a>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
+        
+        {% if results %}
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h4>Resultados da Importação</h4>
+                </div>
+                <div class="card-body">
+                    <p><strong>Total processado:</strong> {{ results.total }}</p>
+                    <p><strong>Importados com sucesso:</strong> {{ results.success }}</p>
+                    <p><strong>Falhas:</strong> {{ results.failures }}</p>
+                    
+                    {% if results.errors %}
+                        <div class="alert alert-danger">
+                            <h5>Erros:</h5>
+                            <ul>
+                                {% for error in results.errors %}
+                                    <li>{{ error }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        {% endif %}
     </div>
     
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <script>
-        // Display selected filename in the custom file input
-        $(".custom-file-input").on("change", function() {
-            var fileName = $(this).val().split("\\").pop();
-            $(this).siblings(".custom-file-label").addClass("selected").html(fileName);
+        // Update file input label with selected filename
+        $('.custom-file-input').on('change', function() {
+            var fileName = $(this).val().split('\\').pop();
+            $(this).next('.custom-file-label').html(fileName);
         });
     </script>
 </body>

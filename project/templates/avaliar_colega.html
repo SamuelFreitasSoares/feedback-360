@@ -19,81 +19,91 @@
             <a href="{% url 'notas' %}">Notas</a>
             <a href="{% url 'disciplinas' %}">Disciplinas</a>
             <a href="{% url 'perfil' %}">Perfil</a>
+            {% if user_type == 'admin' %}
+                <a href="{% url 'admin_dashboard' %}">Admin</a>
+            {% endif %}
             <a href="{% url 'logout' %}">Sair</a>
         </div>
     </div>
     
     <div class="container mt-4">
-        <nav aria-label="breadcrumb">
-            <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="{% url 'atividades' %}">Atividades</a></li>
-                <li class="breadcrumb-item"><a href="{% url 'atividade_detalhe' avaliacao.atividade.id %}">{{ avaliacao.atividade.titulo }}</a></li>
-                <li class="breadcrumb-item active">Avaliar Colega</li>
-            </ol>
-        </nav>
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
         
-        <div class="card">
-            <div class="card-header">
-                <h2>Avaliar Colega: {{ avaliacao.avaliado_aluno.nomeAluno }}</h2>
-                <p class="text-muted">Atividade: {{ avaliacao.atividade.titulo }}</p>
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>Avaliar Colega</h1>
+            <a href="{% url 'atividade_detalhe' avaliacao.atividade.id %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Voltar para Atividade
+            </a>
+        </div>
+        
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">Avaliação de {{ avaliacao.avaliado_aluno.nomeAluno }}</h4>
             </div>
             <div class="card-body">
-                <p>Avalie seu colega em cada uma das competências abaixo, usando uma escala de 1 a 5, onde:</p>
-                <div class="rating-legend mb-4">
-                    <div class="d-flex justify-content-between">
-                        <div><i class="fas fa-star text-warning"></i> = Insatisfatório</div>
-                        <div><i class="fas fa-star text-warning"></i><i class="fas fa-star text-warning"></i> = Regular</div>
-                        <div><i class="fas fa-star text-warning"></i><i class="fas fa-star text-warning"></i><i class="fas fa-star text-warning"></i> = Bom</div>
-                        <div><i class="fas fa-star text-warning"></i><i class="fas fa-star text-warning"></i><i class="fas fa-star text-warning"></i><i class="fas fa-star text-warning"></i> = Muito Bom</div>
-                        <div><i class="fas fa-star text-warning"></i><i class="fas fa-star text-warning"></i><i class="fas fa-star text-warning"></i><i class="fas fa-star text-warning"></i><i class="fas fa-star text-warning"></i> = Excelente</div>
-                    </div>
+                <div class="mb-4">
+                    <p><strong>Atividade:</strong> {{ avaliacao.atividade.titulo }}</p>
+                    <p><strong>Disciplina:</strong> {{ avaliacao.atividade.turma.disciplina.nome }}</p>
+                    <p><strong>Avaliando:</strong> {{ avaliacao.avaliado_aluno.nomeAluno }}</p>
+                </div>
+                
+                <div class="alert alert-info mb-4">
+                    <h5><i class="fas fa-info-circle"></i> Instruções:</h5>
+                    <p>Avalie seu colega em cada competência abaixo, considerando sua participação durante a atividade.</p>
+                    <p>A escala vai de 1 (Insuficiente) a 5 (Excelente).</p>
                 </div>
                 
                 <form method="post">
                     {% csrf_token %}
                     
+                    <div class="rating-legend mb-4">
+                        <p class="mb-1"><strong>Escala de Avaliação:</strong></p>
+                        <div class="d-flex justify-content-between">
+                            <div class="text-danger">1 - Insuficiente</div>
+                            <div class="text-warning">2 - Regular</div>
+                            <div class="text-info">3 - Bom</div>
+                            <div class="text-primary">4 - Muito Bom</div>
+                            <div class="text-success">5 - Excelente</div>
+                        </div>
+                    </div>
+                    
                     {% for competencia in competencias %}
-                    <div class="card mb-3">
-                        <div class="card-body">
-                            <h5 class="card-title">{{ competencia.nome }}</h5>
-                            <p class="card-text">{{ competencia.descricao }}</p>
-                            
-                            <div class="form-group">
-                                <label>Sua avaliação:</label>
-                                <div class="rating">
-                                    <div class="form-check form-check-inline">
-                                        <input class="form-check-input" type="radio" name="competencia_{{ competencia.id }}" id="comp_{{ competencia.id }}_1" value="1" required>
-                                        <label class="form-check-label" for="comp_{{ competencia.id }}_1">1</label>
-                                    </div>
-                                    <div class="form-check form-check-inline">
-                                        <input class="form-check-input" type="radio" name="competencia_{{ competencia.id }}" id="comp_{{ competencia.id }}_2" value="2">
-                                        <label class="form-check-label" for="comp_{{ competencia.id }}_2">2</label>
-                                    </div>
-                                    <div class="form-check form-check-inline">
-                                        <input class="form-check-input" type="radio" name="competencia_{{ competencia.id }}" id="comp_{{ competencia.id }}_3" value="3">
-                                        <label class="form-check-label" for="comp_{{ competencia.id }}_3">3</label>
-                                    </div>
-                                    <div class="form-check form-check-inline">
-                                        <input class="form-check-input" type="radio" name="competencia_{{ competencia.id }}" id="comp_{{ competencia.id }}_4" value="4">
-                                        <label class="form-check-label" for="comp_{{ competencia.id }}_4">4</label>
-                                    </div>
-                                    <div class="form-check form-check-inline">
-                                        <input class="form-check-input" type="radio" name="competencia_{{ competencia.id }}" id="comp_{{ competencia.id }}_5" value="5">
-                                        <label class="form-check-label" for="comp_{{ competencia.id }}_5">5</label>
+                        {% if competencia.atividade.id == avaliacao.atividade.id %}
+                            <div class="card mb-3">
+                                <div class="card-header">
+                                    <h5 class="mb-0">{{ competencia.nome }}</h5>
+                                </div>
+                                <div class="card-body">
+                                    <p>{{ competencia.descricao }}</p>
+                                    
+                                    <div class="rating">
+                                        <div class="form-group">
+                                            <div class="d-flex justify-content-between">
+                                                {% for i in '12345' %}
+                                                    <div class="form-check form-check-inline">
+                                                        <input class="form-check-input" type="radio" name="competencia_{{ competencia.id }}" 
+                                                               id="comp_{{ competencia.id }}_{{ i }}" value="{{ i }}" required>
+                                                        <label class="form-check-label" for="comp_{{ competencia.id }}_{{ i }}">{{ i }}</label>
+                                                    </div>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    </div>
+                        {% endif %}
                     {% endfor %}
                     
-                    <div class="alert alert-warning">
-                        <i class="fas fa-exclamation-triangle"></i> Atenção: Após confirmar a avaliação, não será possível modificá-la.
-                    </div>
-                    
-                    <div class="form-group">
-                        <button type="submit" class="btn btn-primary btn-lg">Confirmar Avaliação</button>
-                        <a href="{% url 'atividade_detalhe' avaliacao.atividade.id %}" class="btn btn-secondary btn-lg ml-2">Voltar</a>
+                    <div class="d-flex justify-content-end">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Enviar Avaliação
+                        </button>
                     </div>
                 </form>
             </div>

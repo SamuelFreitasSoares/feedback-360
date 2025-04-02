@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    {% load static %}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerenciamento de Usuários - Feedback 360°</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{% static 'css/main.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+</head>
+<body>
+    <div class="header">
+        <p class="logo"><em>Inatel</em></p>
+
+        <div class="links">
+            <a href="{% url 'home' %}">Home</a>
+            <a href="{% url 'admin_dashboard' %}">Dashboard</a>
+            <a href="{% url 'admin_users' %}" class="active">Usuários</a>
+            <a href="{% url 'admin_courses' %}">Cursos</a>
+            <a href="{% url 'admin_disciplines' %}">Disciplinas</a>
+            <a href="{% url 'admin_classes' %}">Turmas</a>
+            <a href="{% url 'admin_import_users' %}">Importar</a>
+            <a href="{% url 'logout' %}">Sair</a>
+        </div>
+    </div>
+    
+    <div class="container mt-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>Gerenciamento de Usuários</h1>
+            <a href="{% url 'admin_create_user' %}" class="btn btn-primary">
+                <i class="fas fa-plus-circle"></i> Novo Usuário
+            </a>
+        </div>
+        
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+        
+        <ul class="nav nav-tabs" id="usersTabs" role="tablist">
+            <li class="nav-item">
+                <a class="nav-link active" id="alunos-tab" data-toggle="tab" href="#alunos" role="tab">
+                    <i class="fas fa-user-graduate"></i> Alunos ({{ alunos.count }})
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" id="professores-tab" data-toggle="tab" href="#professores" role="tab">
+                    <i class="fas fa-chalkboard-teacher"></i> Professores ({{ professores.count }})
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" id="coordenadores-tab" data-toggle="tab" href="#coordenadores" role="tab">
+                    <i class="fas fa-user-tie"></i> Coordenadores ({{ coordenadores.count }})
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" id="admins-tab" data-toggle="tab" href="#admins" role="tab">
+                    <i class="fas fa-user-shield"></i> Administradores ({{ admins.count }})
+                </a>
+            </li>
+        </ul>
+        
+        <div class="tab-content" id="usersTabContent">
+            <!-- Alunos Tab -->
+            <div class="tab-pane fade show active" id="alunos" role="tabpanel">
+                <div class="card mt-3">
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Nome</th>
+                                        <th>Email</th>
+                                        <th>Matrícula</th>
+                                        <th>Curso</th>
+                                        <th>Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for aluno in alunos %}
+                                        <tr>
+                                            <td>{{ aluno.nomeAluno }}</td>
+                                            <td>{{ aluno.emailAluno }}</td>
+                                            <td>{{ aluno.matricula }}</td>
+                                            <td>{{ aluno.curso.nome }}</td>
+                                            <td>
+                                                <a href="{% url 'admin_edit_user' 'aluno' aluno.idAluno %}" class="btn btn-sm btn-info">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                                <button type="button" class="btn btn-sm btn-danger" data-toggle="modal" data-target="#deleteModal" 
+                                                        data-user-id="{{ aluno.idAluno }}" data-user-name="{{ aluno.nomeAluno }}" data-user-role="aluno">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    {% empty %}
+                                        <tr>
+                                            <td colspan="5" class="text-center">Nenhum aluno cadastrado.</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Professores Tab -->
+            <div class="tab-pane fade" id="professores" role="tabpanel">
+                <div class="card mt-3">
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Nome</th>
+                                        <th>Email</th>
+                                        <th>Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for professor in professores %}
+                                        <tr>
+                                            <td>{{ professor.nomeProf }}</td>
+                                            <td>{{ professor.emailProf }}</td>
+                                            <td>
+                                                <a href="{% url 'admin_edit_user' 'professor' professor.idProfessor %}" class="btn btn-sm btn-info">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                                <button type="button" class="btn btn-sm btn-danger" data-toggle="modal" data-target="#deleteModal" 
+                                                        data-user-id="{{ professor.idProfessor }}" data-user-name="{{ professor.nomeProf }}" data-user-role="professor">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    {% empty %}
+                                        <tr>
+                                            <td colspan="3" class="text-center">Nenhum professor cadastrado.</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Coordenadores Tab -->
+            <div class="tab-pane fade" id="coordenadores" role="tabpanel">
+                <div class="card mt-3">
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Nome</th>
+                                        <th>Email</th>
+                                        <th>Curso</th>
+                                        <th>Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for coordenador in coordenadores %}
+                                        <tr>
+                                            <td>{{ coordenador.nomeCoord }}</td>
+                                            <td>{{ coordenador.emailCoord }}</td>
+                                            <td>{{ coordenador.curso.nome|default:"Não atribuído" }}</td>
+                                            <td>
+                                                <a href="{% url 'admin_edit_user' 'coordenador' coordenador.id %}" class="btn btn-sm btn-info">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                                <button type="button" class="btn btn-sm btn-danger" data-toggle="modal" data-target="#deleteModal" 
+                                                        data-user-id="{{ coordenador.id }}" data-user-name="{{ coordenador.nomeCoord }}" data-user-role="coordenador">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    {% empty %}
+                                        <tr>
+                                            <td colspan="4" class="text-center">Nenhum coordenador cadastrado.</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Admins Tab -->
+            <div class="tab-pane fade" id="admins" role="tabpanel">
+                <div class="card mt-3">
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Nome</th>
+                                        <th>Email</th>
+                                        <th>Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for admin in admins %}
+                                        <tr>
+                                            <td>{{ admin.nomeAdmin }}</td>
+                                            <td>{{ admin.emailAdmin }}</td>
+                                            <td>
+                                                <a href="{% url 'admin_edit_user' 'admin' admin.id %}" class="btn btn-sm btn-info">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                                {% if admins.count > 1 %}
+                                                    <button type="button" class="btn btn-sm btn-danger" data-toggle="modal" data-target="#deleteModal" 
+                                                            data-user-id="{{ admin.id }}" data-user-name="{{ admin.nomeAdmin }}" data-user-role="admin">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                {% else %}
+                                                    <button type="button" class="btn btn-sm btn-danger" disabled title="Não é possível excluir o último administrador">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    {% empty %}
+                                        <tr>
+                                            <td colspan="3" class="text-center">Nenhum administrador cadastrado.</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Delete Modal -->
+    <div class="modal fade" id="deleteModal" tabindex="-1" role="dialog" aria-labelledby="deleteModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="deleteModalLabel">Confirmar Exclusão</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    Você tem certeza que deseja excluir <strong id="userName"></strong>?
+                    <p class="text-danger">Esta ação não pode ser desfeita.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                    <form id="deleteForm" method="post" action="">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger">Excluir</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script>
+        $('#deleteModal').on('show.bs.modal', function (event) {
+            var button = $(event.relatedTarget);
+            var userId = button.data('user-id');
+            var userName = button.data('user-name');
+            var userRole = button.data('user-role');
+            
+            var modal = $(this);
+            modal.find('#userName').text(userName);
+            modal.find('#deleteForm').attr('action', '/admin/users/delete/' + userRole + '/' + userId + '/');
+        });
+    </script>
+</body>
+</html>

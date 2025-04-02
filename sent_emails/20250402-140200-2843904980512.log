@@ -1,0 +1,196 @@
+Content-Type: multipart/alternative;
+ boundary="===============2666959223116874607=="
+MIME-Version: 1.0
+Subject: =?utf-8?q?Redefini=C3=A7=C3=A3o_de_Senha_-_Feedback_360=C2=B0?=
+From: =?utf-8?q?Sistema_Feedback_360=C2=B0?= <seu-email@gmail.com>
+To: freitassamuel565@outlook.com
+Date: Wed, 02 Apr 2025 17:02:00 -0000
+Message-ID: <174361332065.1440.15431448640784915943@DESKTOP-DA02H0C>
+
+--===============2666959223116874607==
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+
+
+
+
+    
+    
+    Redefinição de Senha
+    
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #f9f9f9;
+            padding: 30px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 15px;
+        }
+        .logo {
+            font-size: 22px;
+            font-weight: bold;
+            color: #0056b3;
+        }
+        .content {
+            margin-bottom: 30px;
+        }
+        .button {
+            display: inline-block;
+            background-color: #0056b3;
+            color: white;
+            padding: 12px 24px;
+            text-decoration: none;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .footer {
+            margin-top: 30px;
+            font-size: 12px;
+            color: #777;
+            text-align: center;
+            border-top: 1px solid #eee;
+            padding-top: 15px;
+        }
+    
+
+
+    
+        
+            Feedback 360°
+        
+        
+        
+            Olá, Samuel!
+            
+            Recebemos uma solicitação para redefinir sua senha no sistema Feedback 360°. Se você não fez esta solicitação, por favor, ignore este email.
+            
+            Para redefinir sua senha, clique no botão abaixo:
+            
+            
+                Redefinir Senha
+            
+            
+            Ou copie e cole o seguinte link no seu navegador:
+            http://127.0.0.1:8000/reset-password-confirm/eQ2ID00dWr1fD_QU8khiaNtFCgRpQFTwGVuo77caSzA/
+            
+            Este link é válido por 24 horas.
+            
+            Atenciosamente,Equipe Feedback 360°
+        
+        
+        
+            Este é um email automático. Por favor, não responda.
+        
+    
+
+
+
+--===============2666959223116874607==
+Content-Type: text/html; charset="utf-8"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Redefinição de Senha</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #f9f9f9;
+            padding: 30px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 15px;
+        }
+        .logo {
+            font-size: 22px;
+            font-weight: bold;
+            color: #0056b3;
+        }
+        .content {
+            margin-bottom: 30px;
+        }
+        .button {
+            display: inline-block;
+            background-color: #0056b3;
+            color: white;
+            padding: 12px 24px;
+            text-decoration: none;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .footer {
+            margin-top: 30px;
+            font-size: 12px;
+            color: #777;
+            text-align: center;
+            border-top: 1px solid #eee;
+            padding-top: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">Feedback 360°</div>
+        </div>
+        
+        <div class="content">
+            <p>Olá, Samuel!</p>
+            
+            <p>Recebemos uma solicitação para redefinir sua senha no sistema Feedback 360°. Se você não fez esta solicitação, por favor, ignore este email.</p>
+            
+            <p>Para redefinir sua senha, clique no botão abaixo:</p>
+            
+            <p style="text-align: center; margin: 30px 0;">
+                <a href="http://127.0.0.1:8000/reset-password-confirm/eQ2ID00dWr1fD_QU8khiaNtFCgRpQFTwGVuo77caSzA/" class="button">Redefinir Senha</a>
+            </p>
+            
+            <p>Ou copie e cole o seguinte link no seu navegador:</p>
+            <p>http://127.0.0.1:8000/reset-password-confirm/eQ2ID00dWr1fD_QU8khiaNtFCgRpQFTwGVuo77caSzA/</p>
+            
+            <p>Este link é válido por 24 horas.</p>
+            
+            <p>Atenciosamente,<br>Equipe Feedback 360°</p>
+        </div>
+        
+        <div class="footer">
+            <p>Este é um email automático. Por favor, não responda.</p>
+        </div>
+    </div>
+</body>
+</html>
+
+--===============2666959223116874607==--
+
+-------------------------------------------------------------------------------
