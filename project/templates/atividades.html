@@ -59,7 +59,8 @@
                                     </div>
                                     <div class="list-group">
                                 {% endif %}
-                                {% with True as has_pending %}
+                                
+                                {% with has_pending=True %}
                                     <a href="{% url 'atividade_detalhe' atividade.id %}" class="list-group-item list-group-item-action list-group-item-warning">
                                         <div class="d-flex w-100 justify-content-between">
                                             <h5 class="mb-1">{{ atividade.titulo }}</h5>
@@ -69,13 +70,16 @@
                                         <small>Grupo: {{ atividade.grupo.nome }}</small>
                                     </a>
                                 {% endwith %}
+                                
                                 {% if forloop.last %}
                                     </div>
                                 {% endif %}
                             {% endif %}
                         {% endfor %}
                         
-                        {% if not has_pending %}
+                        {% if has_pending %}
+                            <!-- We have pending activities -->
+                        {% else %}
                             <div class="alert alert-success">
                                 <i class="fas fa-check-circle"></i> Você não tem avaliações pendentes.
                             </div>

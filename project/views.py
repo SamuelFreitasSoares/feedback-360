@@ -65,7 +65,14 @@ def login_required_custom(view_func):
                 Professor.objects.get(idProfessor=user_id)
             elif user_type == 'coordenador':
                 Coordenador.objects.get(id=user_id)
-            # Add more user types if needed
+            elif user_type == 'admin':
+                from .models import Admin
+                Admin.objects.get(id=user_id)
+            else:
+                # Unrecognized user type
+                messages.error(request, "Tipo de usuário não reconhecido.")
+                request.session.flush()
+                return redirect('login')
         except Exception:
             # If the user record doesn't exist, clear session and redirect to login
             messages.error(request, "Sua sessão expirou ou é inválida. Por favor, faça login novamente.")
@@ -245,16 +252,35 @@ def home(request):
     # Customized dashboard based on user type
     if user_type == 'aluno':
         aluno = Aluno.objects.get(idAluno=user_id)
-        pending_evaluations = Avaliacao.objects.filter(
-            avaliador_aluno=aluno, 
-            concluida=False
-        ).count()
+        
+        # Get pending evaluations the same way they're calculated in atividades view
+        turmas_aluno = TurmaAluno.objects.filter(aluno=aluno)
+        all_atividades = Atividade.objects.filter(
+            turma__in=[ta.turma for ta in turmas_aluno]
+        ).order_by('-dataEntrega', 'titulo')
+        
+        pending_evaluations = 0
+        for atividade in all_atividades:
+            grupos = Grupo.objects.filter(atividade=atividade, alunos=aluno)
+            if grupos.exists():
+                grupo = grupos.first()
+                colegas = grupo.alunos.exclude(idAluno=aluno.idAluno)
+                
+                for colega in colegas:
+                    try:
+                        avaliacao = Avaliacao.objects.get(
+                            avaliador_aluno=aluno,
+                            avaliado_aluno=colega,
+                            atividade=atividade
+                        )
+                        
+                        if not avaliacao.concluida:
+                            pending_evaluations += 1
+                    except Avaliacao.DoesNotExist:
+                        pending_evaluations += 1
         
         # Get recent activities
-        turmas_aluno = TurmaAluno.objects.filter(aluno=aluno)
-        recent_activities = Atividade.objects.filter(
-            turma__in=[ta.turma for ta in turmas_aluno]
-        ).order_by('-dataEntrega', 'titulo')[:5]  # Sort by date and then alphabetically by title
+        recent_activities = all_atividades[:5]  # First 5 activities
         
         context.update({
             'pending_evaluations': pending_evaluations,
@@ -300,18 +326,40 @@ def atividades(request):
         ).order_by('-dataEntrega', 'titulo')  # Sort by date and then alphabetically by title
         
         # Add group info and pending evaluations
+        pending_count = 0  # Count to verify total pending evaluations
         for atividade in atividades:
             grupos = Grupo.objects.filter(atividade=atividade, alunos=aluno)
             atividade.grupo = grupos.first() if grupos.exists() else None
             
+            # Set default to False
+            atividade.pendente = False
+            
+            # Only check for pending evaluations if student is in a group for this activity
             if atividade.grupo:
-                avaliacoes_pendentes = Avaliacao.objects.filter(
-                    avaliador_aluno=aluno,
-                    avaliado_aluno__in=atividade.grupo.alunos.all(),
-                    atividade=atividade,
-                    concluida=False
-                ).exists()
-                atividade.pendente = avaliacoes_pendentes
+                # Get all group members except the current student
+                colegas = atividade.grupo.alunos.exclude(idAluno=aluno.idAluno)
+                
+                for colega in colegas:
+                    try:
+                        avaliacao = Avaliacao.objects.get(
+                            avaliador_aluno=aluno,
+                            avaliado_aluno=colega,
+                            atividade=atividade
+                        )
+                        
+                        # If evaluation is not completed, mark as pending
+                        if not avaliacao.concluida:
+                            atividade.pendente = True
+                            pending_count += 1
+                            break
+                    except Avaliacao.DoesNotExist:
+                        # If evaluation doesn't exist, it's considered pending
+                        atividade.pendente = True
+                        pending_count += 1
+                        break
+        
+        # For debugging
+        print(f"Total pending evaluations in atividades view: {pending_count}")
     
     elif user_type == 'professor':
         professor = Professor.objects.get(idProfessor=user_id)
@@ -375,13 +423,17 @@ def atividade_detalhe(request, id_atividade):
             'user_type': user_type
         })
     
-    elif user_type in ['professor', 'coordenador']:
+    elif user_type in ['professor', 'coordenador', 'admin']:
         grupos = Grupo.objects.filter(atividade=atividade).order_by('nome')  # Sort groups alphabetically
         return render(request, 'atividade_detalhe.html', {
             'atividade': atividade,
             'grupos': grupos,
             'user_type': user_type
         })
+    
+    # Fallback for any unhandled user types
+    messages.error(request, "Você não tem permissão para visualizar esta atividade.")
+    return redirect('atividades')
 
 @login_required_custom
 def avaliar_colega(request, id_avaliacao):

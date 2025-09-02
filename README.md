@@ -72,11 +72,20 @@ O Sistema de Feedback 360° permite que estudantes avaliem seus colegas em traba
 ## Implantação em Produção
 
 ### Pré-requisitos
-- Servidor Linux (Ubuntu/Debian recomendado)
+- Servidor Linux (Ubuntu/Debian recomendado) com no mínimo 2GB de RAM e 1 CPU
 - Python 3.9+ instalado
-- PostgreSQL
+- PostgreSQL 12+
 - Nginx ou Apache
 - Domínio configurado com DNS
+- Certificado SSL (pode ser obtido gratuitamente com Let's Encrypt)
+- Pelo menos 10GB de espaço em disco disponível
+- Acesso SSH ao servidor
+- Firewall configurado para permitir tráfego nas portas 80 (HTTP), 443 (HTTPS) e 22 (SSH)
+
+### Requisitos de Rede
+- Conexão estável com a internet
+- IP fixo ou serviço de DNS dinâmico configurado
+- Largura de banda mínima recomendada: 5 Mbps
 
 ### 1. Preparação do Servidor
 
