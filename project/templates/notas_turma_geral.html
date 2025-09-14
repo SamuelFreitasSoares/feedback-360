@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    {% load static %}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ turma.disciplina.nome }} - Turma {{ turma.codigo }} - Feedback 360°</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{% static 'css/main.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="header">
+        <p class="logo"><em>Inatel</em></p>
+
+        <div class="links">
+            <a href="{% url 'home' %}">Home</a>
+            <a href="{% url 'atividades' %}">Atividades</a>
+            <a href="{% url 'notas' %}">Notas</a>
+            <a href="{% url 'disciplinas' %}">Disciplinas</a>
+            <a href="{% url 'competencias' %}">Competências</a>
+            <a href="{% url 'perfil' %}">Perfil</a>
+            {% if user_type == 'admin' %}
+                <a href="{% url 'admin_dashboard' %}">Admin</a>
+            {% endif %}
+            <a href="{% url 'logout' %}">Sair</a>
+        </div>
+    </div>
+    
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h1><i class="fas fa-chart-line"></i> Visão Geral da Turma</h1>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item"><a href="{% url 'home' %}">Home</a></li>
+                            <li class="breadcrumb-item"><a href="{% url 'notas_professor_disciplinas' %}">Notas</a></li>
+                            <li class="breadcrumb-item"><a href="{% url 'notas_professor_turmas' turma.disciplina.id %}">{{ turma.disciplina.nome }}</a></li>
+                            <li class="breadcrumb-item active">Turma {{ turma.codigo }}</li>
+                        </ol>
+                    </nav>
+                </div>
+            </div>
+        </div>
+
+        <!-- Informações da Turma -->
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0"><i class="fas fa-info-circle"></i> Informações da Turma</h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <p><strong>Disciplina:</strong> {{ turma.disciplina.nome }}</p>
+                    </div>
+                    <div class="col-md-3">
+                        <p><strong>Código da Turma:</strong> {{ turma.codigo }}</p>
+                    </div>
+                    <div class="col-md-3">
+                        <p><strong>Semestre:</strong> {{ turma.semestre }}</p>
+                    </div>
+                    <div class="col-md-3">
+                        <p><strong>Total de Alunos:</strong> {{ num_alunos }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Estatísticas Gerais -->
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h4><i class="fas fa-chart-bar"></i> Média da Turma por Competência</h4>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="competenciasChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h4><i class="fas fa-info-circle"></i> Resumo Estatístico</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-6">
+                                <div class="text-center">
+                                    <h3 class="text-primary">{{ num_alunos }}</h3>
+                                    <p class="text-muted">Alunos</p>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="text-center">
+                                    <h3 class="text-success">{{ num_atividades }}</h3>
+                                    <p class="text-muted">Atividades</p>
+                                </div>
+                            </div>
+                        </div>
+                        <hr>
+                        <h6>Médias por Competência:</h6>
+                        {% for competencia, media in estatisticas_competencias.items %}
+                            <div class="d-flex justify-content-between">
+                                <span>{{ competencia }}:</span>
+                                <span class="badge badge-primary">{{ media }}/5</span>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Lista de Alunos -->
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h4 class="mb-0"><i class="fas fa-users"></i> Alunos da Turma</h4>
+            </div>
+            <div class="card-body">
+                {% if alunos %}
+                    <div class="row">
+                        {% for aluno in alunos %}
+                            <div class="col-md-6 col-lg-4 mb-3">
+                                <div class="card border-left-primary">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <h6 class="mb-1">{{ aluno.nomeAluno }}</h6>
+                                                <small class="text-muted">ID: {{ aluno.idAluno }}</small>
+                                            </div>
+                                            <a href="{% url 'notas_aluno_individual' turma.id aluno.idAluno %}" 
+                                               class="btn btn-sm btn-primary">
+                                                <i class="fas fa-eye"></i> Ver Notas
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>Nenhum aluno matriculado.</strong>
+                        <p class="mb-0">Esta turma ainda não possui alunos matriculados.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Botões de Navegação -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <a href="{% url 'notas_professor_turmas' turma.disciplina.id %}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Voltar às Turmas
+                </a>
+                <a href="{% url 'notas_professor_disciplinas' %}" class="btn btn-outline-secondary ml-2">
+                    <i class="fas fa-book"></i> Todas as Disciplinas
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Chart for competencies
+        const chartData = JSON.parse('{{ chart_data|safe|escapejs }}');
+        
+        const competenciasChart = new Chart(
+            document.getElementById('competenciasChart'),
+            {
+                type: 'bar',
+                data: {
+                    labels: chartData.labels,
+                    datasets: [{
+                        label: 'Média da Turma',
+                        data: chartData.data,
+                        backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 5
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            }
+        );
+    </script>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>

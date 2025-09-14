@@ -666,19 +666,8 @@ def notas(request):
         }
     
     elif user_type == 'professor':
-        professor = Professor.objects.get(idProfessor=user_id)
-        
-        # Get notes from evaluations where this professor created the activity
-        turmas = Turma.objects.filter(professor=professor)
-        atividades = Atividade.objects.filter(turma__in=turmas)
-        avaliacoes = Avaliacao.objects.filter(atividade__in=atividades, concluida=True)
-        notas = Nota.objects.filter(avaliacao__in=avaliacoes)
-        
-        context = {
-            'notas': notas,
-            'turmas': turmas,
-            'user_type': user_type
-        }
+        # Redirect professors to discipline selection page
+        return redirect('notas_professor_disciplinas')
         
     elif user_type == 'coordenador':
         coordenador = Coordenador.objects.get(id=user_id)
@@ -2323,3 +2312,212 @@ def excluir_notificacao(request, notificacao_id):
         messages.error(request, "Você não tem permissão para excluir esta notificação.")
     
     return redirect('notificacoes')
+
+
+# New views for professor grades interface
+@login_required_custom
+def notas_professor_disciplinas(request):
+    """View for professor to select a discipline to view grades"""
+    user_type = request.session.get('user_type')
+    user_id = request.session.get('user_id')
+    
+    if user_type != 'professor':
+        messages.error(request, "Acesso negado. Apenas professores podem acessar esta página.")
+        return redirect('home')
+    
+    professor = Professor.objects.get(idProfessor=user_id)
+    disciplinas = Disciplina.objects.filter(
+        turmas__professor=professor
+    ).distinct().order_by('nome')
+    
+    return render(request, 'notas_professor_disciplinas.html', {
+        'disciplinas': disciplinas,
+        'user_type': user_type,
+        'username': request.session.get('username')
+    })
+
+
+@login_required_custom 
+def notas_professor_turmas(request, disciplina_id):
+    """View for professor to select a class within a discipline"""
+    user_type = request.session.get('user_type')
+    user_id = request.session.get('user_id')
+    
+    if user_type != 'professor':
+        messages.error(request, "Acesso negado. Apenas professores podem acessar esta página.")
+        return redirect('home')
+    
+    professor = Professor.objects.get(idProfessor=user_id)
+    disciplina = get_object_or_404(Disciplina, id=disciplina_id)
+    
+    # Verify that this professor teaches this discipline
+    turmas = Turma.objects.filter(professor=professor, disciplina=disciplina).order_by('codigo')
+    
+    if not turmas.exists():
+        messages.error(request, "Você não leciona esta disciplina.")
+        return redirect('notas_professor_disciplinas')
+    
+    return render(request, 'notas_professor_turmas.html', {
+        'disciplina': disciplina,
+        'turmas': turmas,
+        'user_type': user_type,
+        'username': request.session.get('username')
+    })
+
+
+@login_required_custom
+def notas_turma_geral(request, turma_id):
+    """View for professor to see class overview with statistics"""
+    user_type = request.session.get('user_type')
+    user_id = request.session.get('user_id')
+    
+    if user_type != 'professor':
+        messages.error(request, "Acesso negado. Apenas professores podem acessar esta página.")
+        return redirect('home')
+    
+    professor = Professor.objects.get(idProfessor=user_id)
+    turma = get_object_or_404(Turma, id=turma_id)
+    
+    # Verify that this professor teaches this class
+    if turma.professor != professor:
+        messages.error(request, "Você não leciona esta turma.")
+        return redirect('notas_professor_disciplinas')
+    
+    # Get students in this class
+    matriculas = TurmaAluno.objects.filter(turma=turma).select_related('aluno')
+    alunos = [m.aluno for m in matriculas]
+    
+    # Get activities for this class
+    atividades = Atividade.objects.filter(turma=turma)
+    
+    # Get completed evaluations for this class
+    avaliacoes = Avaliacao.objects.filter(
+        atividade__in=atividades,
+        concluida=True
+    )
+    
+    # Get all notes for this class
+    notas = Nota.objects.filter(avaliacao__in=avaliacoes).select_related(
+        'competencia', 'avaliacao', 'avaliacao__avaliado_aluno'
+    )
+    
+    # Calculate overall class statistics by competency
+    competencias = Competencia.objects.all()
+    estatisticas_competencias = {}
+    
+    for competencia in competencias:
+        notas_competencia = notas.filter(competencia=competencia)
+        if notas_competencia.exists():
+            media = notas_competencia.aggregate(Avg('nota'))['nota__avg']
+            estatisticas_competencias[competencia.nome] = round(media, 2)
+        else:
+            estatisticas_competencias[competencia.nome] = 0
+    
+    # Prepare chart data for competencies
+    chart_data = {
+        'labels': list(estatisticas_competencias.keys()),
+        'data': list(estatisticas_competencias.values())
+    }
+    
+    context = {
+        'turma': turma,
+        'alunos': alunos,
+        'num_alunos': len(alunos),
+        'num_atividades': atividades.count(),
+        'estatisticas_competencias': estatisticas_competencias,
+        'chart_data': json.dumps(chart_data),
+        'user_type': user_type,
+        'username': request.session.get('username')
+    }
+    
+    return render(request, 'notas_turma_geral.html', context)
+
+
+@login_required_custom
+def notas_aluno_individual(request, turma_id, aluno_id):
+    """View for professor to see individual student grades"""
+    user_type = request.session.get('user_type')
+    user_id = request.session.get('user_id')
+    
+    if user_type != 'professor':
+        messages.error(request, "Acesso negado. Apenas professores podem acessar esta página.")
+        return redirect('home')
+    
+    professor = Professor.objects.get(idProfessor=user_id)
+    turma = get_object_or_404(Turma, id=turma_id)
+    aluno = get_object_or_404(Aluno, idAluno=aluno_id)
+    
+    # Verify that this professor teaches this class
+    if turma.professor != professor:
+        messages.error(request, "Você não leciona esta turma.")
+        return redirect('notas_professor_disciplinas')
+    
+    # Verify that this student is in this class
+    if not TurmaAluno.objects.filter(turma=turma, aluno=aluno).exists():
+        messages.error(request, "Este aluno não está matriculado nesta turma.")
+        return redirect('notas_turma_geral', turma_id=turma_id)
+    
+    # Get activities for this class
+    atividades = Atividade.objects.filter(turma=turma)
+    
+    # Get all evaluations received by this student in this class
+    avaliacoes = Avaliacao.objects.filter(
+        atividade__in=atividades,
+        avaliado_aluno=aluno,
+        concluida=True
+    )
+    
+    # Separate self-assessments from peer evaluations
+    auto_avaliacoes = avaliacoes.filter(is_self_assessment=True)
+    avaliacoes_pares = avaliacoes.filter(is_self_assessment=False)
+    
+    # Get notes from these evaluations
+    notas_auto = Nota.objects.filter(avaliacao__in=auto_avaliacoes).select_related(
+        'competencia', 'avaliacao', 'avaliacao__atividade'
+    )
+    notas_pares = Nota.objects.filter(avaliacao__in=avaliacoes_pares).select_related(
+        'competencia', 'avaliacao', 'avaliacao__atividade'
+    )
+    
+    # All notes for chart calculations
+    notas = Nota.objects.filter(avaliacao__in=avaliacoes).select_related(
+        'competencia', 'avaliacao', 'avaliacao__atividade'
+    )
+    
+    # Calculate statistics by competency - separated by type
+    competencias = Competencia.objects.all()
+    radar_data = {
+        'labels': [c.nome for c in competencias],
+        'media_geral': [],
+        'auto_avaliacao': []
+    }
+    
+    for competencia in competencias:
+        # Overall average (all evaluations)
+        notas_comp_geral = notas.filter(competencia=competencia)
+        if notas_comp_geral.exists():
+            media_geral = notas_comp_geral.aggregate(Avg('nota'))['nota__avg']
+            radar_data['media_geral'].append(float(media_geral))
+        else:
+            radar_data['media_geral'].append(0)
+        
+        # Self-assessment average
+        notas_comp_auto = notas_auto.filter(competencia=competencia)
+        if notas_comp_auto.exists():
+            media_auto = notas_comp_auto.aggregate(Avg('nota'))['nota__avg']
+            radar_data['auto_avaliacao'].append(float(media_auto))
+        else:
+            radar_data['auto_avaliacao'].append(0)
+    
+    context = {
+        'turma': turma,
+        'aluno': aluno,
+        'notas': notas,
+        'notas_auto': notas_auto,
+        'notas_pares': notas_pares,
+        'radar_data': json.dumps(radar_data),
+        'user_type': user_type,
+        'username': request.session.get('username')
+    }
+    
+    return render(request, 'notas_aluno_individual.html', context)

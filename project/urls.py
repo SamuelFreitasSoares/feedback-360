@@ -33,6 +33,7 @@ urlpatterns = [
     path('custom-admin/courses/', views.admin_courses, name='admin_courses'),
     path('custom-admin/disciplines/', views.admin_disciplines, name='admin_disciplines'),
     path('custom-admin/classes/', views.admin_classes, name='admin_classes'),
+    path('custom-admin/classes/<int:turma_id>/students/', views.admin_class_students, name='admin_class_students'),
     path('custom-admin/semesters/', views.admin_semesters, name='admin_semesters'),
     
     # Add debug URL
@@ -51,4 +52,10 @@ urlpatterns = [
     path('competencias/criar/', views.criar_competencia, name='criar_competencia'),
     path('competencias/editar/<int:competencia_id>/', views.editar_competencia, name='editar_competencia'),
     path('competencias/excluir/<int:competencia_id>/', views.excluir_competencia, name='excluir_competencia'),
+    
+    # Professor grades interface
+    path('notas/professor/disciplinas/', views.notas_professor_disciplinas, name='notas_professor_disciplinas'),
+    path('notas/professor/disciplina/<int:disciplina_id>/turmas/', views.notas_professor_turmas, name='notas_professor_turmas'),
+    path('notas/turma/<int:turma_id>/', views.notas_turma_geral, name='notas_turma_geral'),
+    path('notas/turma/<int:turma_id>/aluno/<int:aluno_id>/', views.notas_aluno_individual, name='notas_aluno_individual'),
 ]

@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    {% load static %}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ aluno.nomeAluno }} - Notas Individuais - Feedback 360°</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{% static 'css/main.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="header">
+        <p class="logo"><em>Inatel</em></p>
+
+        <div class="links">
+            <a href="{% url 'home' %}">Home</a>
+            <a href="{% url 'atividades' %}">Atividades</a>
+            <a href="{% url 'notas' %}">Notas</a>
+            <a href="{% url 'disciplinas' %}">Disciplinas</a>
+            <a href="{% url 'competencias' %}">Competências</a>
+            <a href="{% url 'perfil' %}">Perfil</a>
+            {% if user_type == 'admin' %}
+                <a href="{% url 'admin_dashboard' %}">Admin</a>
+            {% endif %}
+            <a href="{% url 'logout' %}">Sair</a>
+        </div>
+    </div>
+    
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h1><i class="fas fa-user-graduate"></i> Notas Individuais</h1>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item"><a href="{% url 'home' %}">Home</a></li>
+                            <li class="breadcrumb-item"><a href="{% url 'notas_professor_disciplinas' %}">Notas</a></li>
+                            <li class="breadcrumb-item"><a href="{% url 'notas_professor_turmas' turma.disciplina.id %}">{{ turma.disciplina.nome }}</a></li>
+                            <li class="breadcrumb-item"><a href="{% url 'notas_turma_geral' turma.id %}">Turma {{ turma.codigo }}</a></li>
+                            <li class="breadcrumb-item active">{{ aluno.nomeAluno }}</li>
+                        </ol>
+                    </nav>
+                </div>
+            </div>
+        </div>
+
+        <!-- Informações do Aluno -->
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0"><i class="fas fa-user"></i> Informações do Aluno</h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <p><strong>Nome:</strong> {{ aluno.nomeAluno }}</p>
+                    </div>
+                    <div class="col-md-3">
+                        <p><strong>ID:</strong> {{ aluno.idAluno }}</p>
+                    </div>
+                    <div class="col-md-3">
+                        <p><strong>Turma:</strong> {{ turma.codigo }}</p>
+                    </div>
+                    <div class="col-md-3">
+                        <p><strong>Disciplina:</strong> {{ turma.disciplina.nome }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gráfico Radar -->
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h4><i class="fas fa-chart-area"></i> Visão Geral por Competência</h4>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="radarChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h4><i class="fas fa-info-circle"></i> Legenda</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-6">
+                                <div class="d-flex align-items-center mb-2">
+                                    <div style="width: 20px; height: 20px; background-color: rgba(54, 162, 235, 0.6); margin-right: 10px;"></div>
+                                    <span><strong>Média Geral</strong></span>
+                                </div>
+                                <p class="small text-muted">Inclui todas as avaliações (peers + auto-avaliação)</p>
+                            </div>
+                            <div class="col-6">
+                                <div class="d-flex align-items-center mb-2">
+                                    <div style="width: 20px; height: 20px; background-color: rgba(75, 192, 192, 0.6); margin-right: 10px;"></div>
+                                    <span><strong>Auto-avaliada</strong></span>
+                                </div>
+                                <p class="small text-muted">Apenas as auto-avaliações do aluno</p>
+                            </div>
+                        </div>
+                        <hr>
+                        <p class="small">
+                            <i class="fas fa-lightbulb text-warning"></i>
+                            <strong>Interpretação:</strong> Compare as duas linhas para entender a autopercepção versus a percepção dos colegas.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Auto-avaliações -->
+        {% if notas_auto %}
+        <div class="card mb-4">
+            <div class="card-header bg-success text-white">
+                <h4 class="mb-0"><i class="fas fa-user-check"></i> Auto-Avaliações</h4>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Atividade</th>
+                                <th>Competência</th>
+                                <th>Nota</th>
+                                <th>Data</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for nota in notas_auto %}
+                                <tr>
+                                    <td>{{ nota.avaliacao.atividade.titulo }}</td>
+                                    <td>{{ nota.competencia.nome }}</td>
+                                    <td>
+                                        <span class="badge badge-success">{{ nota.nota }}/5</span>
+                                    </td>
+                                    <td>{{ nota.dataAvaliacao|date:"d/m/Y" }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Avaliações de pares -->
+        {% if notas_pares %}
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0"><i class="fas fa-users"></i> Avaliações de Colegas</h4>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Avaliador</th>
+                                <th>Atividade</th>
+                                <th>Competência</th>
+                                <th>Nota</th>
+                                <th>Data</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for nota in notas_pares %}
+                                <tr>
+                                    <td>{{ nota.avaliacao.avaliador_aluno.nomeAluno }}</td>
+                                    <td>{{ nota.avaliacao.atividade.titulo }}</td>
+                                    <td>{{ nota.competencia.nome }}</td>
+                                    <td>
+                                        <span class="badge badge-primary">{{ nota.nota }}/5</span>
+                                    </td>
+                                    <td>{{ nota.dataAvaliacao|date:"d/m/Y" }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Todas as avaliações -->
+        {% if notas %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h4 class="mb-0"><i class="fas fa-list"></i> Todas as Avaliações</h4>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Tipo</th>
+                                <th>Avaliador</th>
+                                <th>Atividade</th>
+                                <th>Competência</th>
+                                <th>Nota</th>
+                                <th>Data</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for nota in notas %}
+                                <tr>
+                                    <td>
+                                        {% if nota.avaliacao.is_self_assessment %}
+                                            <span class="badge badge-success">Auto-avaliação</span>
+                                        {% else %}
+                                            <span class="badge badge-primary">Avaliação de par</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if nota.avaliacao.is_self_assessment %}
+                                            {{ aluno.nomeAluno }} (próprio)
+                                        {% else %}
+                                            {{ nota.avaliacao.avaliador_aluno.nomeAluno }}
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ nota.avaliacao.atividade.titulo }}</td>
+                                    <td>{{ nota.competencia.nome }}</td>
+                                    <td>
+                                        {% if nota.avaliacao.is_self_assessment %}
+                                            <span class="badge badge-success">{{ nota.nota }}/5</span>
+                                        {% else %}
+                                            <span class="badge badge-primary">{{ nota.nota }}/5</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ nota.dataAvaliacao|date:"d/m/Y" }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% else %}
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i>
+                <strong>Nenhuma avaliação encontrada.</strong>
+                <p class="mb-0">Este aluno ainda não possui avaliações registradas nesta turma.</p>
+            </div>
+        {% endif %}
+
+        <!-- Botões de Navegação -->
+        <div class="row">
+            <div class="col-12">
+                <a href="{% url 'notas_turma_geral' turma.id %}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Voltar à Turma
+                </a>
+                <a href="{% url 'notas_professor_turmas' turma.disciplina.id %}" class="btn btn-outline-secondary ml-2">
+                    <i class="fas fa-users"></i> Outras Turmas
+                </a>
+                <a href="{% url 'notas_professor_disciplinas' %}" class="btn btn-outline-secondary ml-2">
+                    <i class="fas fa-book"></i> Todas as Disciplinas
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Radar chart for competencies
+        const radarData = JSON.parse('{{ radar_data|safe|escapejs }}');
+        
+        const radarChart = new Chart(
+            document.getElementById('radarChart'),
+            {
+                type: 'radar',
+                data: {
+                    labels: radarData.labels,
+                    datasets: [
+                        {
+                            label: 'Média Geral',
+                            data: radarData.media_geral,
+                            backgroundColor: 'rgba(54, 162, 235, 0.2)', // Azul transparente
+                            borderColor: 'rgb(54, 162, 235)', // Azul
+                            pointBackgroundColor: 'rgb(54, 162, 235)',
+                            pointBorderColor: '#fff',
+                            pointHoverBackgroundColor: '#fff',
+                            pointHoverBorderColor: 'rgb(54, 162, 235)'
+                        },
+                        {
+                            label: 'Auto-avaliada',
+                            data: radarData.auto_avaliacao,
+                            backgroundColor: 'rgba(75, 192, 192, 0.2)', // Verde transparente
+                            borderColor: 'rgb(75, 192, 192)', // Verde
+                            pointBackgroundColor: 'rgb(75, 192, 192)',
+                            pointBorderColor: '#fff',
+                            pointHoverBackgroundColor: '#fff',
+                            pointHoverBorderColor: 'rgb(75, 192, 192)'
+                        }
+                    ]
+                },
+                options: {
+                    scales: {
+                        r: {
+                            beginAtZero: true,
+                            max: 5
+                        }
+                    }
+                }
+            }
+        );
+    </script>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>
