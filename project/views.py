@@ -323,22 +323,16 @@ def atividades(request):
         turmas_aluno = TurmaAluno.objects.filter(aluno=aluno)
         atividades = Atividade.objects.filter(
             turma__in=[ta.turma for ta in turmas_aluno]
-        ).order_by('-dataEntrega', 'titulo')  # Sort by date and then alphabetically by title
-        
+        ).order_by('-dataEntrega', 'titulo')
+
         # Add group info and pending evaluations
-        pending_count = 0  # Count to verify total pending evaluations
+        pending_count = 0
         for atividade in atividades:
             grupos = Grupo.objects.filter(atividade=atividade, alunos=aluno)
             atividade.grupo = grupos.first() if grupos.exists() else None
-            
-            # Set default to False
             atividade.pendente = False
-            
-            # Only check for pending evaluations if student is in a group for this activity
             if atividade.grupo:
-                # Get all group members except the current student
                 colegas = atividade.grupo.alunos.exclude(idAluno=aluno.idAluno)
-                
                 for colega in colegas:
                     try:
                         avaliacao = Avaliacao.objects.get(
@@ -346,21 +340,22 @@ def atividades(request):
                             avaliado_aluno=colega,
                             atividade=atividade
                         )
-                        
-                        # If evaluation is not completed, mark as pending
                         if not avaliacao.concluida:
                             atividade.pendente = True
                             pending_count += 1
                             break
                     except Avaliacao.DoesNotExist:
-                        # If evaluation doesn't exist, it's considered pending
                         atividade.pendente = True
                         pending_count += 1
                         break
-        
-        # For debugging
+
+        atividades_pendentes = [a for a in atividades if a.grupo and a.pendente]
         print(f"Total pending evaluations in atividades view: {pending_count}")
-    
+        return render(request, 'atividades.html', {
+            'atividades': atividades,
+            'atividades_pendentes': atividades_pendentes,
+            'user_type': user_type
+        })
     elif user_type == 'professor':
         professor = Professor.objects.get(idProfessor=user_id)
         turmas = Turma.objects.filter(professor=professor)
@@ -1021,7 +1016,13 @@ def admin_import_users(request):
         try:
             # Read CSV or Excel file
             if file.name.endswith('.csv'):
-                df = pd.read_csv(file)
+                import io
+                file_bytes = file.read()
+                try:
+                    file_str = file_bytes.decode('utf-8')
+                except UnicodeDecodeError:
+                    file_str = file_bytes.decode('latin1')
+                df = pd.read_csv(io.StringIO(file_str))
             elif file.name.endswith(('.xls', '.xlsx')):
                 df = pd.read_excel(file)
             else:
