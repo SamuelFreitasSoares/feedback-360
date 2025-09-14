@@ -397,24 +397,42 @@ def atividade_detalhe(request, id_atividade):
         grupo = grupos.first()
         colegas = grupo.alunos.all().order_by('nomeAluno')  # Sort colleagues alphabetically
         
-        # Check for pending evaluations
+        # Check for pending evaluations (both peer and self-evaluations)
         avaliacoes = []
+        auto_avaliacao = None
+        
         for colega in colegas:
             avaliacao, created = Avaliacao.objects.get_or_create(
                 avaliador_aluno=aluno,
                 avaliado_aluno=colega,
                 atividade=atividade,
-                defaults={'concluida': False}
+                defaults={
+                    'concluida': False,
+                    'is_self_assessment': (colega == aluno)
+                }
             )
-            avaliacoes.append({
-                'colega': colega,
-                'avaliacao': avaliacao
-            })
+            
+            # Update is_self_assessment if the evaluation already existed
+            if not created and avaliacao.is_self_assessment != (colega == aluno):
+                avaliacao.is_self_assessment = (colega == aluno)
+                avaliacao.save()
+            
+            if colega == aluno:  # Self-evaluation
+                auto_avaliacao = {
+                    'colega': colega,
+                    'avaliacao': avaliacao
+                }
+            else:  # Peer evaluation
+                avaliacoes.append({
+                    'colega': colega,
+                    'avaliacao': avaliacao
+                })
         
         return render(request, 'atividade_detalhe.html', {
             'atividade': atividade,
             'grupo': grupo,
             'avaliacoes': avaliacoes,
+            'auto_avaliacao': auto_avaliacao,
             'user_type': user_type
         })
     
@@ -494,7 +512,68 @@ def avaliar_colega(request, id_avaliacao):
         messages.success(request, "Avaliação realizada com sucesso!")
         return redirect('atividade_detalhe', id_atividade=avaliacao.atividade.id)
     
-    return render(request, 'avaliar_colega.html', {
+        return render(request, 'avaliar_colega.html', {
+        'avaliacao': avaliacao,
+        'competencias': competencias,
+        'user_type': user_type
+    })
+
+@login_required_custom
+def auto_avaliar(request, id_avaliacao):
+    """View para auto-avaliação do aluno"""
+    user_type = request.session.get('user_type')
+    user_id = request.session.get('user_id')
+    
+    if user_type != 'aluno':
+        messages.error(request, "Apenas alunos podem realizar auto-avaliações.")
+        return redirect('home')
+    
+    avaliacao = get_object_or_404(Avaliacao, id=id_avaliacao)
+    aluno = Aluno.objects.get(idAluno=user_id)
+    
+    # Check if the logged user is the evaluator and if it's a self-assessment
+    if avaliacao.avaliador_aluno != aluno or not avaliacao.is_self_assessment:
+        messages.error(request, "Você não tem permissão para realizar esta auto-avaliação.")
+        return redirect('atividades')
+    
+    # Get competências from the activity
+    competencias = avaliacao.atividade.competencias.all()
+    
+    if request.method == 'POST':
+        # Verify if the evaluation is already completed
+        if avaliacao.concluida:
+            messages.warning(request, "Esta auto-avaliação já foi concluída.")
+            return redirect('atividade_detalhe', id_atividade=avaliacao.atividade.id)
+        
+        for competencia in competencias:
+            nota_valor = request.POST.get(f'competencia_{competencia.id}')
+            if not nota_valor:
+                messages.error(request, f"A nota para a competência {competencia.nome} é obrigatória.")
+                return redirect('auto_avaliar', id_avaliacao=id_avaliacao)
+            
+            try:
+                nota_valor = int(nota_valor)
+                if nota_valor < 1 or nota_valor > 5:
+                    messages.error(request, "As notas devem estar entre 1 e 5.")
+                    return redirect('auto_avaliar', id_avaliacao=id_avaliacao)
+                
+                Nota.objects.create(
+                    avaliacao=avaliacao,
+                    competencia=competencia,
+                    nota=nota_valor,
+                    dataAvaliacao=timezone.now()
+                )
+            except ValueError:
+                messages.error(request, "Valor de nota inválido.")
+                return redirect('auto_avaliar', id_avaliacao=id_avaliacao)
+        
+        avaliacao.concluida = True
+        avaliacao.save()
+        
+        messages.success(request, "Auto-avaliação realizada com sucesso!")
+        return redirect('atividade_detalhe', id_atividade=avaliacao.atividade.id)
+    
+    return render(request, 'auto_avaliar.html', {
         'avaliacao': avaliacao,
         'competencias': competencias,
         'user_type': user_type
@@ -514,7 +593,19 @@ def notas(request):
             concluida=True
         )
         
+        # Separate self-assessments from peer evaluations
+        auto_avaliacoes = avaliacoes.filter(is_self_assessment=True)
+        avaliacoes_pares = avaliacoes.filter(is_self_assessment=False)
+        
         # Get notes from these evaluations
+        notas_auto = Nota.objects.filter(avaliacao__in=auto_avaliacoes).select_related(
+            'competencia', 'avaliacao', 'avaliacao__atividade'
+        )
+        notas_pares = Nota.objects.filter(avaliacao__in=avaliacoes_pares).select_related(
+            'competencia', 'avaliacao', 'avaliacao__atividade'
+        )
+        
+        # All notes for chart calculations
         notas = Nota.objects.filter(avaliacao__in=avaliacoes).select_related(
             'competencia', 'avaliacao', 'avaliacao__atividade'
         )
@@ -541,22 +632,34 @@ def notas(request):
                         chart_data[competencia.nome]['labels'].append(f"{semestre.ano}/{semestre.periodo}")
                         chart_data[competencia.nome]['data'].append(float(media))
         
-        # Calculate average by competency for radar chart
+        # Calculate average by competency for radar chart - separated by type
         radar_data = {
             'labels': [c.nome for c in competencias],
-            'data': []
+            'media_geral': [],
+            'auto_avaliacao': []
         }
         
         for competencia in competencias:
-            notas_comp = notas.filter(competencia=competencia)
-            if notas_comp.exists():
-                media = notas_comp.aggregate(Avg('nota'))['nota__avg']
-                radar_data['data'].append(float(media))
+            # Média geral (todas as avaliações)
+            notas_comp_geral = notas.filter(competencia=competencia)
+            if notas_comp_geral.exists():
+                media_geral = notas_comp_geral.aggregate(Avg('nota'))['nota__avg']
+                radar_data['media_geral'].append(float(media_geral))
             else:
-                radar_data['data'].append(0)
+                radar_data['media_geral'].append(0)
+            
+            # Média das auto-avaliações
+            notas_comp_auto = notas_auto.filter(competencia=competencia)
+            if notas_comp_auto.exists():
+                media_auto = notas_comp_auto.aggregate(Avg('nota'))['nota__avg']
+                radar_data['auto_avaliacao'].append(float(media_auto))
+            else:
+                radar_data['auto_avaliacao'].append(0)
         
         context = {
             'notas': notas,
+            'notas_auto': notas_auto,
+            'notas_pares': notas_pares,
             'chart_data': json.dumps(chart_data),
             'radar_data': json.dumps(radar_data),
             'user_type': user_type
@@ -927,17 +1030,19 @@ def criar_grupo(request, id_atividade):
             aluno = Aluno.objects.get(idAluno=aluno_id)
             grupo.alunos.add(aluno)
         
-        # Create evaluation entries for each group member to evaluate others
+        # Create evaluation entries for each group member to evaluate others AND self-evaluation
         alunos_grupo = grupo.alunos.all()
         for avaliador in alunos_grupo:
             for avaliado in alunos_grupo:
-                if avaliador != avaliado:  # Skip self-evaluation
-                    Avaliacao.objects.create(
-                        avaliador_aluno=avaliador,
-                        avaliado_aluno=avaliado,
-                        atividade=atividade,
-                        concluida=False
-                    )
+                Avaliacao.objects.get_or_create(
+                    avaliador_aluno=avaliador,
+                    avaliado_aluno=avaliado,
+                    atividade=atividade,
+                    defaults={
+                        'concluida': False,
+                        'is_self_assessment': (avaliador == avaliado)
+                    }
+                )
         
         messages.success(request, f"Grupo '{nome_grupo}' criado com sucesso!")
         return redirect('atividade_detalhe', id_atividade=id_atividade)

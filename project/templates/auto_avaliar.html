@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    {% load static %}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auto-Avaliação - Feedback 360°</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{% static 'css/main.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+</head>
+<body>
+    <div class="header">
+        <p class="logo"><em>Inatel</em></p>
+
+        <div class="links">
+            <a href="{% url 'home' %}">Home</a>
+            <a href="{% url 'atividades' %}" class="active">Atividades</a>
+            <a href="{% url 'notas' %}">Notas</a>
+            <a href="{% url 'disciplinas' %}">Disciplinas</a>
+            <a href="{% url 'perfil' %}">Perfil</a>
+            {% if user_type == 'admin' %}
+                <a href="{% url 'admin_dashboard' %}">Admin</a>
+            {% endif %}
+            <a href="{% url 'logout' %}">Sair</a>
+        </div>
+    </div>
+    
+    <div class="container mt-4">
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+        
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1><i class="fas fa-user-check"></i> Auto-Avaliação</h1>
+            <a href="{% url 'atividade_detalhe' avaliacao.atividade.id %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Voltar para Atividade
+            </a>
+        </div>
+        
+        <div class="card mb-4">
+            <div class="card-header bg-success text-white">
+                <h4 class="mb-0"><i class="fas fa-user"></i> Sua Auto-Avaliação</h4>
+            </div>
+            <div class="card-body">
+                <div class="mb-4">
+                    <p><strong>Atividade:</strong> {{ avaliacao.atividade.titulo }}</p>
+                    <p><strong>Disciplina:</strong> {{ avaliacao.atividade.turma.disciplina.nome }}</p>
+                    <p><strong>Avaliando:</strong> Você mesmo</p>
+                </div>
+                
+                <div class="alert alert-info mb-4">
+                    <h5><i class="fas fa-info-circle"></i> Instruções para Auto-Avaliação:</h5>
+                    <p>Reflita sobre sua própria atuação durante a atividade e avalie-se honestamente em cada competência.</p>
+                    <p>Esta é uma oportunidade de autoconhecimento e desenvolvimento pessoal.</p>
+                    <p>A escala vai de 1 (Insuficiente) a 5 (Excelente).</p>
+                </div>
+                
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="rating-legend mb-4">
+                        <p class="mb-1"><strong>Escala de Avaliação:</strong></p>
+                        <div class="d-flex justify-content-between">
+                            <div class="text-danger">1 - Insuficiente</div>
+                            <div class="text-warning">2 - Regular</div>
+                            <div class="text-info">3 - Bom</div>
+                            <div class="text-primary">4 - Muito Bom</div>
+                            <div class="text-success">5 - Excelente</div>
+                        </div>
+                    </div>
+                    
+                    {% for competencia in competencias %}
+                        <div class="card mb-3">
+                            <div class="card-header bg-light">
+                                <h5 class="mb-0"><i class="fas fa-star"></i> {{ competencia.nome }}</h5>
+                            </div>
+                            <div class="card-body">
+                                <p>{{ competencia.descricao }}</p>
+                                
+                                <div class="rating">
+                                    <div class="form-group">
+                                        <label class="font-weight-bold">Como você avalia seu desempenho nesta competência?</label>
+                                        <div class="d-flex justify-content-between mt-2">
+                                            {% for i in '12345' %}
+                                                <div class="form-check form-check-inline">
+                                                    <input class="form-check-input" type="radio" name="competencia_{{ competencia.id }}" 
+                                                           id="comp_{{ competencia.id }}_{{ i }}" value="{{ i }}" required>
+                                                    <label class="form-check-label" for="comp_{{ competencia.id }}_{{ i }}">{{ i }}</label>
+                                                </div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                    
+                    <div class="alert alert-warning">
+                        <h6><i class="fas fa-exclamation-triangle"></i> Lembre-se:</h6>
+                        <p class="mb-0">A auto-avaliação é uma ferramenta de autoconhecimento. Seja honesto(a) consigo mesmo(a) para obter o máximo benefício desta atividade.</p>
+                    </div>
+                    
+                    <div class="d-flex justify-content-end">
+                        <button type="submit" class="btn btn-success btn-lg">
+                            <i class="fas fa-check"></i> Enviar Auto-Avaliação
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>

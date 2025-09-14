@@ -55,9 +55,11 @@
                     </div>
                 </div>
                 
-                <div class="card">
-                    <div class="card-header">
-                        <h4>Todas as Avaliações</h4>
+                <!-- Auto-avaliações -->
+                {% if notas_auto %}
+                <div class="card mb-4">
+                    <div class="card-header bg-success text-white">
+                        <h4><i class="fas fa-user-check"></i> Suas Auto-Avaliações</h4>
                     </div>
                     <div class="card-body">
                         <div class="table-responsive">
@@ -72,8 +74,99 @@
                                     </tr>
                                 </thead>
                                 <tbody>
+                                    {% for nota in notas_auto %}
+                                        <tr>
+                                            <td>{{ nota.avaliacao.atividade.turma.disciplina.nome }}</td>
+                                            <td>{{ nota.avaliacao.atividade.titulo }}</td>
+                                            <td>{{ nota.competencia.nome }}</td>
+                                            <td>
+                                                <span class="badge badge-success">{{ nota.nota }}/5</span>
+                                            </td>
+                                            <td>{{ nota.dataAvaliacao|date:"d/m/Y" }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- Avaliações de pares -->
+                {% if notas_pares %}
+                <div class="card mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h4><i class="fas fa-users"></i> Avaliações de Colegas</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Avaliador</th>
+                                        <th>Disciplina</th>
+                                        <th>Atividade</th>
+                                        <th>Competência</th>
+                                        <th>Nota</th>
+                                        <th>Data</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for nota in notas_pares %}
+                                        <tr>
+                                            <td>{{ nota.avaliacao.avaliador_aluno.nomeAluno }}</td>
+                                            <td>{{ nota.avaliacao.atividade.turma.disciplina.nome }}</td>
+                                            <td>{{ nota.avaliacao.atividade.titulo }}</td>
+                                            <td>{{ nota.competencia.nome }}</td>
+                                            <td>
+                                                <span class="badge badge-primary">{{ nota.nota }}/5</span>
+                                            </td>
+                                            <td>{{ nota.dataAvaliacao|date:"d/m/Y" }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- Todas as avaliações -->
+                <div class="card">
+                    <div class="card-header">
+                        <h4>Todas as Avaliações</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Tipo</th>
+                                        <th>Avaliador</th>
+                                        <th>Disciplina</th>
+                                        <th>Atividade</th>
+                                        <th>Competência</th>
+                                        <th>Nota</th>
+                                        <th>Data</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
                                     {% for nota in notas %}
                                         <tr>
+                                            <td>
+                                                {% if nota.avaliacao.is_self_assessment %}
+                                                    <span class="badge badge-success">Auto-avaliação</span>
+                                                {% else %}
+                                                    <span class="badge badge-primary">Avaliação de par</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if nota.avaliacao.is_self_assessment %}
+                                                    Você mesmo
+                                                {% else %}
+                                                    {{ nota.avaliacao.avaliador_aluno.nomeAluno }}
+                                                {% endif %}
+                                            </td>
                                             <td>{{ nota.avaliacao.atividade.turma.disciplina.nome }}</td>
                                             <td>{{ nota.avaliacao.atividade.titulo }}</td>
                                             <td>{{ nota.competencia.nome }}</td>
@@ -142,16 +235,28 @@
                             type: 'radar',
                             data: {
                                 labels: radarData.labels,
-                                datasets: [{
-                                    label: 'Média por Competência',
-                                    data: radarData.data,
-                                    backgroundColor: 'rgba(54, 162, 235, 0.2)',
-                                    borderColor: 'rgb(54, 162, 235)',
-                                    pointBackgroundColor: 'rgb(54, 162, 235)',
-                                    pointBorderColor: '#fff',
-                                    pointHoverBackgroundColor: '#fff',
-                                    pointHoverBorderColor: 'rgb(54, 162, 235)'
-                                }]
+                                datasets: [
+                                    {
+                                        label: 'Média Geral',
+                                        data: radarData.media_geral,
+                                        backgroundColor: 'rgba(54, 162, 235, 0.2)', // Azul transparente
+                                        borderColor: 'rgb(54, 162, 235)', // Azul
+                                        pointBackgroundColor: 'rgb(54, 162, 235)',
+                                        pointBorderColor: '#fff',
+                                        pointHoverBackgroundColor: '#fff',
+                                        pointHoverBorderColor: 'rgb(54, 162, 235)'
+                                    },
+                                    {
+                                        label: 'Auto-avaliada',
+                                        data: radarData.auto_avaliacao,
+                                        backgroundColor: 'rgba(75, 192, 192, 0.2)', // Verde transparente
+                                        borderColor: 'rgb(75, 192, 192)', // Verde
+                                        pointBackgroundColor: 'rgb(75, 192, 192)',
+                                        pointBorderColor: '#fff',
+                                        pointHoverBackgroundColor: '#fff',
+                                        pointHoverBorderColor: 'rgb(75, 192, 192)'
+                                    }
+                                ]
                             },
                             options: {
                                 scales: {

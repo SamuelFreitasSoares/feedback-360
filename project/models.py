@@ -114,6 +114,7 @@ class Avaliacao(models.Model):
     avaliado_aluno = models.ForeignKey(Aluno, on_delete=models.CASCADE, related_name='avaliacoes_recebidas')
     atividade = models.ForeignKey(Atividade, on_delete=models.CASCADE, related_name='avaliacoes')
     concluida = models.BooleanField(default=False)
+    is_self_assessment = models.BooleanField(default=False, help_text="Indica se é uma auto-avaliação")
     
     class Meta:
         unique_together = ('avaliador_aluno', 'avaliado_aluno', 'atividade')
