@@ -511,8 +511,8 @@ def avaliar_colega(request, id_avaliacao):
         
         messages.success(request, "Avaliação realizada com sucesso!")
         return redirect('atividade_detalhe', id_atividade=avaliacao.atividade.id)
-    
-        return render(request, 'avaliar_colega.html', {
+
+    return render(request, 'avaliar_colega.html', {
         'avaliacao': avaliacao,
         'competencias': competencias,
         'user_type': user_type
