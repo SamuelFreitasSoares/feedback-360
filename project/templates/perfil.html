@@ -9,21 +9,7 @@
     <link rel="stylesheet" href="{% static 'css/main.css' %}">
 </head>
 <body>
-    <div class="header">
-        <p class="logo"><em>Inatel</em></p>
-
-        <div class="links">
-            <a href="{% url 'home' %}">Home</a>
-            <a href="{% url 'atividades' %}">Atividades</a>
-            <a href="{% url 'notas' %}">Notas</a>
-            <a href="{% url 'disciplinas' %}">Disciplinas</a>
-            <a href="{% url 'perfil' %}" class="active">Perfil</a>
-            {% if user_type == 'admin' %}
-                <a href="{% url 'admin_dashboard' %}">Admin</a>
-            {% endif %}
-            <a href="{% url 'logout' %}">Sair</a>
-        </div>
-    </div>
+    {% include '_header.html' %}
     
     <div class="container mt-4">
         <h1>Meu Perfil</h1>

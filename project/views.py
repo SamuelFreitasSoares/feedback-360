@@ -671,11 +671,104 @@ def notas(request):
         
     elif user_type == 'coordenador':
         coordenador = Coordenador.objects.get(id=user_id)
-        cursos = Curso.objects.filter(coordenador=coordenador)
-        
+        cursos = Curso.objects.filter(coordenadores=coordenador)
+
+        # Handle optional semester filter from GET (formats accepted: 'YYYY-P' or 'YYYY/P')
+        semestre_param = request.GET.get('semester', '')
+        selected_semestre = None
+        if semestre_param:
+            semestre_param = semestre_param.replace('/', '-')
+            parts = semestre_param.split('-')
+            if len(parts) == 2 and parts[0].isdigit() and parts[1].isdigit():
+                ano = int(parts[0])
+                periodo = int(parts[1])
+                selected_semestre = Semestre.objects.filter(ano=ano, periodo=periodo).first()
+
+        # Gather disciplines for coordinator's courses
+        disciplinas = Disciplina.objects.filter(curso__in=cursos).distinct().order_by('nome')
+
+        # Get turmas for these disciplines, optionally filtered by semester
+        if selected_semestre:
+            turmas = Turma.objects.filter(disciplina__in=disciplinas, semestre=selected_semestre).distinct()
+        else:
+            turmas = Turma.objects.filter(disciplina__in=disciplinas).distinct()
+
+        # Get only concluded evaluations related to these turmas
+        notas_qs = Nota.objects.filter(
+            avaliacao__atividade__turma__in=turmas,
+            avaliacao__concluida=True
+        ).select_related('competencia', 'avaliacao', 'avaliacao__atividade')
+
+        # Prepare disciplinas_data: averages per disciplina separated by competencia
+        competencias = list(Competencia.objects.all())
+        disciplinas_labels = [d.nome for d in disciplinas]
+        disciplinas_datasets = []
+        # color palette
+        palette = [
+            'rgba(255, 99, 132, 0.7)',
+            'rgba(54, 162, 235, 0.7)',
+            'rgba(255, 206, 86, 0.7)',
+            'rgba(75, 192, 192, 0.7)',
+            'rgba(153, 102, 255, 0.7)'
+        ]
+        for idx, competencia in enumerate(competencias):
+            data_vals = []
+            for disciplina in disciplinas:
+                avg_res = notas_qs.filter(
+                    avaliacao__atividade__turma__disciplina=disciplina,
+                    competencia=competencia
+                ).aggregate(Avg('nota'))['nota__avg']
+                data_vals.append(float(avg_res) if avg_res is not None else 0)
+
+            disciplinas_datasets.append({
+                'label': competencia.nome,
+                'data': data_vals,
+                'backgroundColor': palette[idx % len(palette)],
+                'borderColor': palette[idx % len(palette)].replace('0.7', '1'),
+                'borderWidth': 1
+            })
+
+        disciplinas_data = {
+            'labels': disciplinas_labels,
+            'datasets': disciplinas_datasets
+        }
+
+        # Prepare turmas_data: averages per turma separated by competencia
+        turmas_labels = [f"{t.disciplina.codigo} - {t.codigo} ({str(t.semestre.ano)[-2:]}/{t.semestre.periodo})" for t in turmas]
+        turmas_datasets = []
+        for idx, competencia in enumerate(competencias):
+            data_vals = []
+            for turma in turmas:
+                avg_res = notas_qs.filter(
+                    avaliacao__atividade__turma=turma,
+                    competencia=competencia
+                ).aggregate(Avg('nota'))['nota__avg']
+                data_vals.append(float(avg_res) if avg_res is not None else 0)
+
+            turmas_datasets.append({
+                'label': competencia.nome,
+                'data': data_vals,
+                'backgroundColor': palette[idx % len(palette)],
+                'borderColor': palette[idx % len(palette)].replace('0.7', '1'),
+                'borderWidth': 1
+            })
+
+        turmas_data = {
+            'labels': turmas_labels,
+            'datasets': turmas_datasets
+        }
+
+        semesters = Semestre.objects.all().order_by('-ano', '-periodo')
+
         context = {
             'cursos': cursos,
-            'user_type': user_type
+            'disciplinas': disciplinas,
+            'notas': notas_qs,
+            'disciplinas_data': json.dumps(disciplinas_data),
+            'turmas_data': json.dumps(turmas_data),
+            'user_type': user_type,
+            'semesters': semesters,
+            'selected_semestre': selected_semestre
         }
     
     else:

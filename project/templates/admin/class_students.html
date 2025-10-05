@@ -12,27 +12,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2-bootstrap4-theme@1.0.0/dist/select2-bootstrap4.min.css" />
 </head>
 <body>
-    <div class="header">
-        <p class="logo"><em>Inatel</em></p>
-
-        <div class="links">
-            <a href="{% url 'home' %}">Home</a>
-            {% if user_type == 'admin' %}
-                <a href="{% url 'admin_dashboard' %}">Dashboard</a>
-                <a href="{% url 'admin_users' %}">Usuários</a>
-                <a href="{% url 'admin_courses' %}">Cursos</a>
-                <a href="{% url 'admin_disciplines' %}">Disciplinas</a>
-                <a href="{% url 'admin_classes' %}" class="active">Turmas</a>
-                <a href="{% url 'admin_semesters' %}">Semestres</a>
-                <a href="{% url 'admin_import_users' %}">Importar</a>
-            {% elif user_type == 'professor' %}
-                <a href="{% url 'atividades' %}">Atividades</a>
-                <a href="{% url 'disciplinas' %}">Disciplinas</a>
-                <a href="{% url 'notas' %}">Notas</a>
-            {% endif %}
-            <a href="{% url 'logout' %}">Sair</a>
-        </div>
-    </div>
+    {% include '_header.html' %}
     
     <div class="container mt-4">
         <div class="d-flex justify-content-between align-items-center mb-4">

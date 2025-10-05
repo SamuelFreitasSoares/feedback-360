@@ -12,21 +12,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2-bootstrap4-theme@1.0.0/dist/select2-bootstrap4.min.css" />
 </head>
 <body>
-    <div class="header">
-        <p class="logo"><em>Inatel</em></p>
-
-        <div class="links">
-            <a href="{% url 'home' %}">Home</a>
-            <a href="{% url 'atividades' %}" class="active">Atividades</a>
-            <a href="{% url 'notas' %}">Notas</a>
-            <a href="{% url 'disciplinas' %}">Disciplinas</a>
-            <a href="{% url 'perfil' %}">Perfil</a>
-            {% if user_type == 'admin' %}
-                <a href="{% url 'admin_dashboard' %}">Admin</a>
-            {% endif %}
-            <a href="{% url 'logout' %}">Sair</a>
-        </div>
-    </div>
+    {% include '_header.html' %}
     
     <div class="container mt-4">
         {% if messages %}
@@ -46,21 +32,7 @@
         
         <div class="row">
             <div class="col-md-7">
-                <div class="card">
-                    <div class="card-header bg-primary text-white">
-                        <h4 class="mb-0">Novo Grupo</h4>
-                    </div>
-                    <div class="card-body">
-                        <form method="post">
-                            {% csrf_token %}
-                            
-                            <div class="form-group">
-                                <label for="nome_grupo">Nome do Grupo</label>
-                                <input type="text" class="form-control" id="nome_grupo" name="nome_grupo" required>
-                                <small class="form-text text-muted">Ex: Grupo 1, Equipe A, etc.</small>
-                            </div>
-                            
-                            <div class="form-group">
+                {% include '_header.html' %}
                                 <label for="alunos">Selecione os Alunos</label>
                                 <select class="form-control select2" id="alunos" name="alunos" multiple required>
                                     {% for aluno in alunos_disponiveis %}

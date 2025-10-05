@@ -10,22 +10,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
 </head>
 <body>
-    <div class="header">
-        <p class="logo"><em>Inatel</em></p>
-
-        <div class="links">
-            <a href="{% url 'home' %}">Home</a>
-            <a href="{% url 'atividades' %}">Atividades</a>
-            <a href="{% url 'notas' %}">Notas</a>
-            <a href="{% url 'disciplinas' %}">Disciplinas</a>
-            <a href="{% url 'competencias' %}">Competências</a>
-            <a href="{% url 'perfil' %}">Perfil</a>
-            {% if user_type == 'admin' %}
-                <a href="{% url 'admin_dashboard' %}">Admin</a>
-            {% endif %}
-            <a href="{% url 'logout' %}">Sair</a>
-        </div>
-    </div>
+    {% include '_header.html' %}
     
     <div class="container mt-4">
         <div class="row">
@@ -61,21 +46,7 @@
 
         <div class="row">
             <div class="col-md-8">
-                <div class="card">
-                    <div class="card-header bg-primary text-white">
-                        <h4 class="mb-0"><i class="fas fa-users"></i> Selecione uma Turma</h4>
-                    </div>
-                    <div class="card-body">
-                        {% if turmas %}
-                            <div class="list-group">
-                                {% for turma in turmas %}
-                                    <a href="{% url 'notas_turma_geral' turma.id %}" 
-                                       class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
-                                        <div>
-                                            <h5 class="mb-1">Turma {{ turma.codigo }}</h5>
-                                            <p class="mb-1"><small class="text-muted">Semestre: {{ turma.semestre }}</small></p>
-                                        </div>
-                                        <div>
+                {% include '_header.html' %}
                                             <span class="badge badge-primary badge-pill">{{ turma.matriculas.count }} aluno(s)</span>
                                             <i class="fas fa-chevron-right"></i>
                                         </div>
@@ -95,21 +66,7 @@
             
             <div class="col-md-4">
                 <div class="card bg-light">
-                    <div class="card-header">
-                        <h5><i class="fas fa-info-circle"></i> Próximos Passos</h5>
-                    </div>
-                    <div class="card-body">
-                        <p class="small">
-                            <strong>Selecione uma turma</strong> para visualizar:
-                        </p>
-                        <ul class="small">
-                            <li>Visão geral com estatísticas da turma</li>
-                            <li>Média por competência</li>
-                            <li>Lista de alunos</li>
-                            <li>Notas individuais detalhadas</li>
-                        </ul>
-                        <hr>
-                        <p class="small text-muted">
+                    {% include '_header.html' %}
                             <i class="fas fa-chart-bar"></i>
                             Você poderá ver gráficos comparativos entre auto-avaliações e avaliações de pares.
                         </p>

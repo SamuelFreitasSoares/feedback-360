@@ -10,21 +10,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
 </head>
 <body>
-    <div class="header">
-        <p class="logo"><em>Inatel</em></p>
-
-        <div class="links">
-            <a href="{% url 'home' %}">Home</a>
-            <a href="{% url 'atividades' %}" class="active">Atividades</a>
-            <a href="{% url 'notas' %}">Notas</a>
-            <a href="{% url 'disciplinas' %}">Disciplinas</a>
-            <a href="{% url 'perfil' %}">Perfil</a>
-            {% if user_type == 'admin' %}
-                <a href="{% url 'admin_dashboard' %}">Admin</a>
-            {% endif %}
-            <a href="{% url 'logout' %}">Sair</a>
-        </div>
-    </div>
+    {% include '_header.html' %}
     
     <div class="container mt-4">
         {% if messages %}
@@ -75,21 +61,7 @@
                     <div class="row">
                         {% for competencia in atividade.competencias.all %}
                             <div class="col-md-6 mb-2">
-                                <div class="card">
-                                    <div class="card-body p-2">
-                                        <h6 class="mb-0">{{ competencia.nome }}</h6>
-                                        <small class="text-muted">{{ competencia.descricao|truncatechars:100 }}</small>
-                                    </div>
-                                </div>
-                            </div>
-                        {% empty %}
-                            <div class="col-12">
-                                <p class="text-muted">Nenhuma competência específica definida para esta atividade.</p>
-                            </div>
-                        {% endfor %}
-                    </div>
-                </div>
-            </div>
+                                {% include '_header.html' %}
         </div>
         
         {% if user_type == 'aluno' %}

@@ -11,21 +11,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-    <div class="header">
-        <p class="logo"><em>Inatel</em></p>
-
-        <div class="links">
-            <a href="{% url 'home' %}">Home</a>
-            <a href="{% url 'atividades' %}">Atividades</a>
-            <a href="{% url 'notas' %}" class="active">Notas</a>
-            <a href="{% url 'disciplinas' %}">Disciplinas</a>
-            <a href="{% url 'perfil' %}">Perfil</a>
-            {% if user_type == 'admin' %}
-                <a href="{% url 'admin_dashboard' %}">Admin</a>
-            {% endif %}
-            <a href="{% url 'logout' %}">Sair</a>
-        </div>
-    </div>
+    {% include '_header.html' %}
     
     <div class="container mt-4">
         <h1>Minhas Notas</h1>
@@ -342,6 +328,18 @@
             
         {% elif user_type == 'coordenador' %}
             {% if cursos %}
+                <form method="get" class="form-inline mb-3">
+                    <label for="semester" class="mr-2">Filtrar por semestre:</label>
+                    <select id="semester" name="semester" class="form-control mr-2">
+                        <option value="">Todos</option>
+                        {% for s in semesters %}
+                            {% with val=s.ano|stringformat:"s"|add:"-"|add:s.periodo|stringformat:"s" %}
+                                <option value="{{ s.ano }}-{{ s.periodo }}" {% if selected_semestre and selected_semestre.id == s.id %}selected{% endif %}>{{ s.ano }}/{{ s.periodo }}</option>
+                            {% endwith %}
+                        {% endfor %}
+                    </select>
+                    <button class="btn btn-primary" type="submit">Aplicar</button>
+                </form>
                 <div class="row mb-4">
                     <div class="col">
                         <div class="card">
@@ -450,9 +448,9 @@
                     </div>
                 
                     <script>
-                        // Bar chart for disciplines
+                        // Disciplines: support grouped bar chart per competency
                         const disciplinasData = JSON.parse('{{ disciplinas_data|safe|escapejs }}');
-                        
+
                         if (disciplinasData.labels && disciplinasData.labels.length > 0) {
                             const barChart = new Chart(
                                 document.getElementById('barChart'),
@@ -460,13 +458,7 @@
                                     type: 'bar',
                                     data: {
                                         labels: disciplinasData.labels,
-                                        datasets: [{
-                                            label: 'Média por Disciplina',
-                                            data: disciplinasData.data,
-                                            backgroundColor: 'rgba(54, 162, 235, 0.7)',
-                                            borderColor: 'rgb(54, 162, 235)',
-                                            borderWidth: 1
-                                        }]
+                                        datasets: disciplinasData.datasets
                                     },
                                     options: {
                                         scales: {
@@ -479,44 +471,29 @@
                                 }
                             );
                         }
-                        
-                        // Pie chart for turmas
+
+                        // Turmas: grouped bar chart per competency (instead of pie)
                         const turmasData = JSON.parse('{{ turmas_data|safe|escapejs }}');
-                        
+
                         if (turmasData.labels && turmasData.labels.length > 0) {
-                            const pieColors = [
-                                'rgba(255, 99, 132, 0.7)',
-                                'rgba(54, 162, 235, 0.7)',
-                                'rgba(255, 206, 86, 0.7)',
-                                'rgba(75, 192, 192, 0.7)',
-                                'rgba(153, 102, 255, 0.7)',
-                                'rgba(255, 159, 64, 0.7)'
-                            ];
-                            
-                            const pieChart = new Chart(
+                            const groupedBar = new Chart(
                                 document.getElementById('pieChart'),
                                 {
-                                    type: 'pie',
+                                    type: 'bar',
                                     data: {
                                         labels: turmasData.labels,
-                                        datasets: [{
-                                            data: turmasData.data,
-                                            backgroundColor: pieColors
-                                        }]
+                                        datasets: turmasData.datasets
                                     },
                                     options: {
-                                        responsive: true,
-                                        plugins: {
-                                            legend: {
-                                                position: 'right'
-                                            },
-                                            tooltip: {
-                                                callbacks: {
-                                                    label: function(context) {
-                                                        return `${context.label}: ${context.raw.toFixed(2)}/5`;
-                                                    }
-                                                }
+                                        indexAxis: 'y',
+                                        scales: {
+                                            x: {
+                                                beginAtZero: true,
+                                                max: 5
                                             }
+                                        },
+                                        plugins: {
+                                            legend: { position: 'right' }
                                         }
                                     }
                                 }

@@ -11,22 +11,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-    <div class="header">
-        <p class="logo"><em>Inatel</em></p>
-
-        <div class="links">
-            <a href="{% url 'home' %}">Home</a>
-            <a href="{% url 'atividades' %}">Atividades</a>
-            <a href="{% url 'notas' %}">Notas</a>
-            <a href="{% url 'disciplinas' %}">Disciplinas</a>
-            <a href="{% url 'competencias' %}">Competências</a>
-            <a href="{% url 'perfil' %}">Perfil</a>
-            {% if user_type == 'admin' %}
-                <a href="{% url 'admin_dashboard' %}">Admin</a>
-            {% endif %}
-            <a href="{% url 'logout' %}">Sair</a>
-        </div>
-    </div>
+    {% include '_header.html' %}
     
     <div class="container mt-4">
         <div class="row">
@@ -72,21 +57,7 @@
         <!-- Gráfico Radar -->
         <div class="row mb-4">
             <div class="col-md-6">
-                <div class="card">
-                    <div class="card-header">
-                        <h4><i class="fas fa-chart-area"></i> Visão Geral por Competência</h4>
-                    </div>
-                    <div class="card-body">
-                        <canvas id="radarChart"></canvas>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-6">
-                <div class="card">
-                    <div class="card-header">
-                        <h4><i class="fas fa-info-circle"></i> Legenda</h4>
-                    </div>
-                    <div class="card-body">
+                {% include '_header.html' %}
                         <div class="row">
                             <div class="col-6">
                                 <div class="d-flex align-items-center mb-2">
@@ -188,21 +159,7 @@
         <!-- Todas as avaliações -->
         {% if notas %}
         <div class="card mb-4">
-            <div class="card-header">
-                <h4 class="mb-0"><i class="fas fa-list"></i> Todas as Avaliações</h4>
-            </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-striped">
-                        <thead>
-                            <tr>
-                                <th>Tipo</th>
-                                <th>Avaliador</th>
-                                <th>Atividade</th>
-                                <th>Competência</th>
-                                <th>Nota</th>
-                                <th>Data</th>
-                            </tr>
+            {% include '_header.html' %}
                         </thead>
                         <tbody>
                             {% for nota in notas %}

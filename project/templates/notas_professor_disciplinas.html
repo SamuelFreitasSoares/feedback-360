@@ -10,22 +10,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
 </head>
 <body>
-    <div class="header">
-        <p class="logo"><em>Inatel</em></p>
-
-        <div class="links">
-            <a href="{% url 'home' %}">Home</a>
-            <a href="{% url 'atividades' %}">Atividades</a>
-            <a href="{% url 'notas' %}">Notas</a>
-            <a href="{% url 'disciplinas' %}">Disciplinas</a>
-            <a href="{% url 'competencias' %}">Competências</a>
-            <a href="{% url 'perfil' %}">Perfil</a>
-            {% if user_type == 'admin' %}
-                <a href="{% url 'admin_dashboard' %}">Admin</a>
-            {% endif %}
-            <a href="{% url 'logout' %}">Sair</a>
-        </div>
-    </div>
+    {% include '_header.html' %}
     
     <div class="container mt-4">
         <div class="row">
@@ -44,21 +29,7 @@
 
         <div class="row">
             <div class="col-md-8">
-                <div class="card">
-                    <div class="card-header bg-primary text-white">
-                        <h4 class="mb-0"><i class="fas fa-book"></i> Selecione uma Disciplina</h4>
-                    </div>
-                    <div class="card-body">
-                        {% if disciplinas %}
-                            <div class="list-group">
-                                {% for disciplina in disciplinas %}
-                                    <a href="{% url 'notas_professor_turmas' disciplina.id %}" 
-                                       class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
-                                        <div>
-                                            <h5 class="mb-1">{{ disciplina.nome }}</h5>
-                                            <small class="text-muted">Código: {{ disciplina.codigo }}</small>
-                                        </div>
-                                        <div>
+                {% include '_header.html' %}
                                             <span class="badge badge-primary badge-pill">{{ disciplina.turmas.count }} turma(s)</span>
                                             <i class="fas fa-chevron-right"></i>
                                         </div>
@@ -78,21 +49,7 @@
             
             <div class="col-md-4">
                 <div class="card bg-light">
-                    <div class="card-header">
-                        <h5><i class="fas fa-info-circle"></i> Instruções</h5>
-                    </div>
-                    <div class="card-body">
-                        <p class="small">
-                            <strong>1.</strong> Selecione uma disciplina para visualizar suas turmas
-                        </p>
-                        <p class="small">
-                            <strong>2.</strong> Escolha uma turma específica para ver as notas
-                        </p>
-                        <p class="small">
-                            <strong>3.</strong> Visualize estatísticas gerais da turma ou notas individuais dos alunos
-                        </p>
-                        <hr>
-                        <p class="small text-muted">
+                    {% include '_header.html' %}
                             <i class="fas fa-lightbulb"></i>
                             <strong>Dica:</strong> Você pode ver médias por competência da turma e comparar auto-avaliações com avaliações de pares.
                         </p>

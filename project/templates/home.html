@@ -10,24 +10,7 @@
 </head>
 <body>
     
-    <div class="header">
-        <p class="logo"><em>Inatel</em></p>
-
-        <div class="links">
-            <a href="{% url 'home' %}" class="active">Home</a>
-            <a href="{% url 'atividades' %}">Atividades</a>
-            <a href="{% url 'notas' %}">Notas</a>
-            <a href="{% url 'disciplinas' %}">Disciplinas</a>
-            {% if user_type == 'professor' or user_type == 'coordenador' or user_type == 'admin' %}
-                <a href="{% url 'competencias' %}">Competências</a>
-            {% endif %}
-            <a href="{% url 'perfil' %}">Perfil</a>
-            {% if user_type == 'admin' %}
-                <a href="{% url 'admin_dashboard' %}">Admin</a>
-            {% endif %}
-            <a href="{% url 'logout' %}">Sair</a>
-        </div>
-    </div>
+    {% include '_header.html' %}
     
     <div class="container mt-4">
         <div class="welcome-container">
@@ -45,21 +28,7 @@
                 
                 {% if recent_activities %}
                     <div class="card mt-4">
-                        <div class="card-header">
-                            <h3>Atividades Recentes</h3>
-                        </div>
-                        <div class="card-body">
-                            <ul class="list-group">
-                                {% for atividade in recent_activities %}
-                                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                                        <div>
-                                            <a href="{% url 'atividade_detalhe' atividade.id %}">
-                                                {{ atividade.titulo }} - {{ atividade.turma.disciplina.nome }}
-                                            </a>
-                                        </div>
-                                        <span class="badge badge-primary">Entrega: {{ atividade.dataEntrega }}</span>
-                                    </li>
-                                {% endfor %}
+                        {% include '_header.html' %}
                             </ul>
                         </div>
                     </div>

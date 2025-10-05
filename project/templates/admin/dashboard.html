@@ -10,21 +10,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
 </head>
 <body>
-    <div class="header">
-        <p class="logo"><em>Inatel</em></p>
-
-        <div class="links">
-            <a href="{% url 'home' %}">Home</a>
-            <a href="{% url 'admin_dashboard' %}" class="active">Dashboard</a>
-            <a href="{% url 'admin_users' %}">Usuários</a>
-            <a href="{% url 'admin_courses' %}">Cursos</a>
-            <a href="{% url 'admin_disciplines' %}">Disciplinas</a>
-            <a href="{% url 'admin_classes' %}">Turmas</a>
-            <a href="{% url 'admin_semesters' %}">Semestres</a>
-            <a href="{% url 'admin_import_users' %}">Importar</a>
-            <a href="{% url 'logout' %}">Sair</a>
-        </div>
-    </div>
+    {% include '_header.html' %}
     
     <div class="container mt-4">
         <h1>Dashboard Administrativo</h1>
@@ -131,21 +117,6 @@
         
         <div class="row">
             <div class="col-md-12">
-                <div class="card">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0">Ações Rápidas</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-3 mb-3">
-                                <a href="{% url 'admin_import_users' %}" class="btn btn-lg btn-block btn-outline-primary">
-                                    <i class="fas fa-file-import mb-2"></i><br>
-                                    Importar Usuários
-                                </a>
-                            </div>
-                            <div class="col-md-3 mb-3">
-                                <a href="{% url 'admin_users' %}" class="btn btn-lg btn-block btn-outline-success">
-                                    <i class="fas fa-users-cog mb-2"></i><br>
                                     Gerenciar Usuários
                                 </a>
                             </div>

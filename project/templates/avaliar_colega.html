@@ -10,21 +10,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
 </head>
 <body>
-    <div class="header">
-        <p class="logo"><em>Inatel</em></p>
-
-        <div class="links">
-            <a href="{% url 'home' %}">Home</a>
-            <a href="{% url 'atividades' %}" class="active">Atividades</a>
-            <a href="{% url 'notas' %}">Notas</a>
-            <a href="{% url 'disciplinas' %}">Disciplinas</a>
-            <a href="{% url 'perfil' %}">Perfil</a>
-            {% if user_type == 'admin' %}
-                <a href="{% url 'admin_dashboard' %}">Admin</a>
-            {% endif %}
-            <a href="{% url 'logout' %}">Sair</a>
-        </div>
-    </div>
+    {% include '_header.html' %}
     
     <div class="container mt-4">
         {% if messages %}
@@ -75,21 +61,7 @@
                     
                     {% for competencia in competencias %}
                         <div class="card mb-3">
-                            <div class="card-header">
-                                <h5 class="mb-0">{{ competencia.nome }}</h5>
-                            </div>
-                            <div class="card-body">
-                                <p>{{ competencia.descricao }}</p>
-                                
-                                <div class="rating">
-                                    <div class="form-group">
-                                        <div class="d-flex justify-content-between">
-                                            {% for i in '12345' %}
-                                                <div class="form-check form-check-inline">
-                                                    <input class="form-check-input" type="radio" name="competencia_{{ competencia.id }}" 
-                                                           id="comp_{{ competencia.id }}_{{ i }}" value="{{ i }}" required>
-                                                    <label class="form-check-label" for="comp_{{ competencia.id }}_{{ i }}">{{ i }}</label>
-                                                </div>
+                            {% include '_header.html' %}
                                             {% endfor %}
                                         </div>
                                     </div>
