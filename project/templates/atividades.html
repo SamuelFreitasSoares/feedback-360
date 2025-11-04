@@ -32,12 +32,24 @@
         
         {% if user_type == 'aluno' %}
             <div class="card mb-4">
-                {% include '_header.html' %}
-                                    <p class="mb-1">{{ atividade.turma.disciplina.nome }} - Turma {{ atividade.turma.codigo }}</p>
-                                    <small>Grupo: {{ atividade.grupo.nome }}</small>
-                                </a>
+                <div class="card-header bg-info text-white">
+                    <h4 class="mb-0">Minhas Avaliações Pendentes</h4>
+                </div>
+                <div class="card-body">
+                    {% if pending_activities %}
+                        <ul class="list-group">
+                            {% for atividade in pending_activities %}
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <a href="{% url 'atividade_detalhe' atividade.id %}">
+                                            {{ atividade.titulo }} - {{ atividade.turma.disciplina.nome }} ({{ atividade.turma.codigo }})
+                                        </a>
+                                        <div class="small text-muted">Grupo: {{ atividade.grupo.nome }}</div>
+                                    </div>
+                                    <span class="badge badge-primary">Entrega: {{ atividade.dataEntrega }}</span>
+                                </li>
                             {% endfor %}
-                        </div>
+                        </ul>
                     {% else %}
                         <div class="alert alert-success">
                             <i class="fas fa-check-circle"></i> Você não tem avaliações pendentes.

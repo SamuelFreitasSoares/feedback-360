@@ -32,7 +32,17 @@
         
         <div class="row">
             <div class="col-md-7">
-                {% include '_header.html' %}
+                <div class="card shadow-sm mb-4">
+                    <div class="card-body">
+                        <form method="post" novalidate>
+                            {% csrf_token %}
+                            <div class="form-group">
+                                <label for="nome_grupo">Nome do Grupo</label>
+                                <input type="text" id="nome_grupo" name="nome_grupo" class="form-control" placeholder="Ex: Grupo 1 - Projeto" required />
+                                <small class="form-text text-muted">Dê um nome ao grupo (ex.: Grupo A, Equipe 1).</small>
+                            </div>
+
+                            <div class="form-group">
                                 <label for="alunos">Selecione os Alunos</label>
                                 <select class="form-control select2" id="alunos" name="alunos" multiple required>
                                     {% for aluno in alunos_disponiveis %}
@@ -42,27 +52,27 @@
                                     {% endfor %}
                                 </select>
                                 <small class="form-text text-muted">Selecione pelo menos 2 alunos para formar um grupo.</small>
-                                
-                                {% if not alunos_disponiveis %}
-                                    <div class="alert alert-warning mt-2">
-                                        <i class="fas fa-exclamation-triangle"></i> 
-                                        Não há alunos disponíveis para adicionar ao grupo. Possíveis razões:
-                                        <ul>
-                                            <li>Não há alunos matriculados nesta turma.</li>
-                                            <li>Todos os alunos já estão em grupos.</li>
-                                        </ul>
-                                        <a href="{% url 'admin_classes' %}" class="btn btn-sm btn-info mt-2">
-                                            <i class="fas fa-user-plus"></i> Gerenciar Alunos da Turma
-                                        </a>
-                                    </div>
-                                {% endif %}
                             </div>
-                            
-                            <div class="alert alert-info">
+
+                            {% if not alunos_disponiveis %}
+                                <div class="alert alert-warning mt-2">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                    Não há alunos disponíveis para adicionar ao grupo. Possíveis razões:
+                                    <ul>
+                                        <li>Não há alunos matriculados nesta turma.</li>
+                                        <li>Todos os alunos já estão em grupos.</li>
+                                    </ul>
+                                    <a href="{% url 'admin_classes' %}" class="btn btn-sm btn-info mt-2">
+                                        <i class="fas fa-user-plus"></i> Gerenciar Alunos da Turma
+                                    </a>
+                                </div>
+                            {% endif %}
+
+                            <div class="alert alert-info mt-3">
                                 <i class="fas fa-info-circle"></i> Ao criar um grupo, o sistema irá gerar automaticamente avaliações para que os membros do grupo se avaliem mutuamente.
                             </div>
-                            
-                            <div class="d-flex justify-content-end">
+
+                            <div class="d-flex justify-content-end mt-3">
                                 <button type="submit" class="btn btn-primary">
                                     <i class="fas fa-users"></i> Criar Grupo
                                 </button>
@@ -71,7 +81,7 @@
                     </div>
                 </div>
             </div>
-            
+
             <div class="col-md-5">
                 <div class="card">
                     <div class="card-header bg-info text-white">
@@ -120,14 +130,21 @@
             
             // Form validation
             $('form').submit(function(e) {
+                var nomeGrupo = $('#nome_grupo').val() ? $('#nome_grupo').val().trim() : '';
                 var selectedStudents = $('#alunos').val();
-                
+
+                if (!nomeGrupo) {
+                    alert('Por favor, informe um nome para o grupo.');
+                    e.preventDefault();
+                    return false;
+                }
+
                 if (!selectedStudents || selectedStudents.length < 2) {
                     alert('Selecione pelo menos 2 alunos para formar um grupo.');
                     e.preventDefault();
                     return false;
                 }
-                
+
                 return true;
             });
         });

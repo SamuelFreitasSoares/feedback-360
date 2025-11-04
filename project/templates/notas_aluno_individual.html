@@ -57,7 +57,6 @@
         <!-- Gráfico Radar -->
         <div class="row mb-4">
             <div class="col-md-6">
-                {% include '_header.html' %}
                         <div class="row">
                             <div class="col-6">
                                 <div class="d-flex align-items-center mb-2">
@@ -79,10 +78,15 @@
                             <i class="fas fa-lightbulb text-warning"></i>
                             <strong>Interpretação:</strong> Compare as duas linhas para entender a autopercepção versus a percepção dos colegas.
                         </p>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <!-- Radar chart canvas -->
+                                        <canvas id="radarChart" width="400" height="300"></canvas>
+                                    </div>
                     </div>
-                </div>
-            </div>
-        </div>
+                            </div>
+                        </div>
+                    </div>
 
         <!-- Auto-avaliações -->
         {% if notas_auto %}
@@ -159,7 +163,21 @@
         <!-- Todas as avaliações -->
         {% if notas %}
         <div class="card mb-4">
-            {% include '_header.html' %}
+            <div class="card-header bg-secondary text-white">
+                <h4 class="mb-0"><i class="fas fa-list"></i> Todas as Avaliações</h4>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Tipo</th>
+                                <th>Avaliador</th>
+                                <th>Atividade</th>
+                                <th>Competência</th>
+                                <th>Nota</th>
+                                <th>Data</th>
+                            </tr>
                         </thead>
                         <tbody>
                             {% for nota in notas %}

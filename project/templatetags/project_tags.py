@@ -16,6 +16,28 @@ def get_item(dictionary, key):
     """Get an item from a dictionary using the key"""
     return dictionary.get(key)
 
+
+@register.filter
+def split(value, sep=None):
+    """Split a string by the given separator and return a list.
+
+    Usage in template: {{ "a,b,c"|split:"," }}
+    If value is None, returns an empty list. Strips whitespace from items.
+    """
+    if value is None:
+        return []
+    try:
+        # ensure it's a string
+        s = str(value)
+        if sep is None:
+            # default Python split behaviour
+            parts = s.split()
+        else:
+            parts = s.split(sep)
+        return [p.strip() for p in parts]
+    except Exception:
+        return []
+
 @register.simple_tag
 def active_url(request, url_name):
     """Check if the current URL matches the given URL name"""

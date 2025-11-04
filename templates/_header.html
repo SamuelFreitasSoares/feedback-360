@@ -3,6 +3,7 @@
     <p class="logo"><em>Inatel</em></p>
 
     <div class="links">
+            {# debug session info removed #}
         {% if user_type == 'admin' %}
             <a href="{% url 'home' %}" {% if request.resolver_match.url_name == 'home' %}class="active"{% endif %}>Home</a>
             <a href="{% url 'admin_dashboard' %}" {% if request.resolver_match.url_name == 'admin_dashboard' %}class="active"{% endif %}>Dashboard</a>
@@ -21,45 +22,7 @@
                 <a href="{% url 'disciplinas' %}" {% if request.resolver_match.url_name == 'disciplinas' or request.resolver_match.url_name == 'disciplina_detalhe' %}class="active"{% endif %}>Disciplinas</a>
                 <a href="{% url 'perfil' %}" {% if request.resolver_match.url_name == 'perfil' %}class="active"{% endif %}>Perfil</a>
 
-                <!-- Dropdown de notificações -->
-                <div class="dropdown d-inline">
-                    <a href="#" class="notification-icon p-2" id="notificationDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                        <i class="fas fa-bell"></i>
-                        {% if notificacoes_count > 0 %}
-                            <span class="notification-count">{{ notificacoes_count }}</span>
-                        {% endif %}
-                    </a>
-                    <div class="dropdown-menu dropdown-menu-right notification-dropdown" aria-labelledby="notificationDropdown">
-                        <div class="notification-header">
-                            <span><strong>Notificações</strong></span>
-                            <a href="{% url 'notificacoes' %}" class="small">Ver todas</a>
-                        </div>
-                        <div class="notification-body">
-                            {% if notificacoes_nao_lidas %}
-                                {% for notificacao in notificacoes_nao_lidas|slice:":5" %}
-                                    <a href="{% if notificacao.link %}{{ notificacao.link }}{% else %}{% url 'marcar_notificacao_como_lida' notificacao.id %}{% endif %}" class="dropdown-item notification-item unread">
-                                        {% if notificacao.tipo == 'info' %}
-                                            <span class="text-info"><i class="fas fa-info-circle"></i></span>
-                                        {% elif notificacao.tipo == 'warning' %}
-                                            <span class="text-warning"><i class="fas fa-exclamation-triangle"></i></span>
-                                        {% elif notificacao.tipo == 'success' %}
-                                            <span class="text-success"><i class="fas fa-check-circle"></i></span>
-                                        {% elif notificacao.tipo == 'danger' %}
-                                            <span class="text-danger"><i class="fas fa-times-circle"></i></span>
-                                        {% endif %}
-                                        <div class="notification-title">{{ notificacao.titulo }}</div>
-                                        <div class="notification-message">{{ notificacao.mensagem|truncatechars:50 }}</div>
-                                        <div class="notification-time">{{ notificacao.data_criacao|date:"d/m/Y H:i" }}</div>
-                                    </a>
-                                {% endfor %}
-                            {% else %}
-                                <div class="dropdown-item notification-item text-center">
-                                    <p class="text-muted my-2">Não há notificações novas</p>
-                                </div>
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
+                        <!-- notifications removed per user request -->
                 <a href="{% url 'logout' %}">Sair</a>
             {% else %}
                 <a href="{% url 'login' %}">Login</a>

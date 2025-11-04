@@ -15,6 +15,7 @@ urlpatterns = [
     path('avaliar/<int:id_avaliacao>/', views.avaliar_colega, name='avaliar_colega'),
     path('auto-avaliar/<int:id_avaliacao>/', views.auto_avaliar, name='auto_avaliar'),
     path('notas/', views.notas, name='notas'),
+    path('notas/feedback/', views.feedback_personalizado, name='feedback_personalizado'),
     path('disciplinas/', views.disciplinas, name='disciplinas'),
     path('disciplina/<int:id_disciplina>/', views.disciplina_detalhe, name='disciplina_detalhe'),
     path('perfil/', views.perfil, name='perfil'),

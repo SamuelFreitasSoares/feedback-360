@@ -1,4 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
+import logging
 from django.contrib import messages
 from django.http import HttpResponse, JsonResponse
 from django.contrib.auth.decorators import login_required, user_passes_test
@@ -587,28 +588,18 @@ def notas(request):
     if user_type == 'aluno':
         aluno = Aluno.objects.get(idAluno=user_id)
         
-        # Get all evaluations received by the student
-        avaliacoes = Avaliacao.objects.filter(
-            avaliado_aluno=aluno,
-            concluida=True
-        )
-        
-        # Separate self-assessments from peer evaluations
-        auto_avaliacoes = avaliacoes.filter(is_self_assessment=True)
-        avaliacoes_pares = avaliacoes.filter(is_self_assessment=False)
-        
-        # Get notes from these evaluations
-        notas_auto = Nota.objects.filter(avaliacao__in=auto_avaliacoes).select_related(
-            'competencia', 'avaliacao', 'avaliacao__atividade'
-        )
-        notas_pares = Nota.objects.filter(avaliacao__in=avaliacoes_pares).select_related(
-            'competencia', 'avaliacao', 'avaliacao__atividade'
-        )
-        
-        # All notes for chart calculations
-        notas = Nota.objects.filter(avaliacao__in=avaliacoes).select_related(
-            'competencia', 'avaliacao', 'avaliacao__atividade'
-        )
+        # Fetch Nota records directly for this student (most recent first)
+        notas_qs = Nota.objects.filter(
+            avaliacao__avaliado_aluno=aluno,
+            avaliacao__concluida=True
+        ).select_related('competencia', 'avaliacao', 'avaliacao__atividade', 'avaliacao__avaliador_aluno').order_by('-dataAvaliacao')
+
+        # Separate self-assessments from peer evaluations using the same base queryset
+        notas_auto = notas_qs.filter(avaliacao__is_self_assessment=True)
+        notas_pares = notas_qs.filter(avaliacao__is_self_assessment=False)
+
+        # Use notas_qs as the main 'notas' variable for template (ordered recent first)
+        notas = notas_qs
         
         # Prepare data for charts - evolution over time
         competencias = Competencia.objects.all()
@@ -777,6 +768,160 @@ def notas(request):
         context = {'notas': notas}
         
     return render(request, 'notas.html', context)
+
+
+@login_required_custom
+def feedback_personalizado(request):
+    """Gera um feedback personalizado por competência para o aluno logado.
+
+    Mostra a média por competência e um texto explicativo/sugestão baseado na faixa
+    da média: [0-1), [1-2), [2-3), [3-4), [4-5].
+    """
+    user_type = request.session.get('user_type')
+    user_id = request.session.get('user_id')
+
+    if user_type != 'aluno':
+        messages.error(request, "Apenas alunos podem acessar esta página de feedback.")
+        return redirect('home')
+
+    aluno = Aluno.objects.get(idAluno=user_id)
+
+    # Compute average per competency for this student
+    from django.db.models import Avg
+    medias_qs = Nota.objects.filter(
+        avaliacao__avaliado_aluno=aluno,
+        avaliacao__concluida=True
+    ).values('competencia__id', 'competencia__nome').annotate(media=Avg('nota'))
+
+    # Map competency id -> média
+    medias_map = {item['competencia__id']: item['media'] for item in medias_qs}
+
+    # Prepare feedback messages for each competency
+    feedback_items = []
+    competencias = Competencia.objects.all().order_by('nome')
+
+    def escolher_feedback(comp_nome, media):
+        """Retorna (label, texto) para a média fornecida, usando mensagens específicas por competência.
+
+        comp_nome: nome da competência (string)
+        media: float or None
+        """
+        if media is None:
+            return ("Sem dados", "Ainda não há avaliações suficientes para esta competência. Participe de atividades e solicite feedback para gerar uma média.")
+
+        # helper to choose label by media
+        if media < 1.0:
+            label = "Insuficiente"
+        elif media < 2.0:
+            label = "Regular"
+        elif media < 3.0:
+            label = "Bom"
+        elif media < 4.0:
+            label = "Muito Bom"
+        else:
+            label = "Excelente"
+
+        # normalize competence name for matching
+        key = (comp_nome or '').lower()
+
+        # Specific suggestions per common competencies (match by keywords)
+        specific = {
+            'pontualidad': [
+                "Atrasos frequentes indicam dificuldade em gerenciar prazos. Estabeleça lembretes, antecipe tarefas e comunique-se com o grupo se precisar de redistribuição de tarefas.",
+                "Melhore seu planejamento: defina metas diárias, use alarmes e combine checkpoints curtos no grupo para reduzir atrasos.",
+                "Continue aprimorando sua gestão de tempo; documente prazos e revise os progressos regularmente.",
+                "Excelente pontualidade — mantenha uma rotina consistente e ajude colegas a organizarem entregas em conjunto.",
+                "Excelente trabalho. Considere liderar prazos do grupo e compartilhar suas técnicas de organização."
+            ],
+            'pontualidade': [
+                "Atrasos frequentes indicam dificuldade em gerenciar prazos. Estabeleça lembretes, antecipe tarefas e comunique-se com o grupo se precisar de redistribuição de tarefas.",
+                "Melhore seu planejamento: defina metas diárias, use alarmes e combine checkpoints curtos no grupo para reduzir atrasos.",
+                "Continue aprimorando sua gestão de tempo; documente prazos e revise os progressos regularmente.",
+                "Muito bom — mantenha a rotina e ofereça ajuda ao grupo em organização de entregas.",
+                "Excelente trabalho. Considere liderar prazos do grupo e compartilhar suas técnicas de organização."
+            ],
+            'comunica': [
+                "Dificuldades de comunicação podem comprometer o trabalho em equipe. Pratique expressar ideias claras e confirme entendimento com perguntas simples.",
+                "Procure ser mais claro(a) nas mensagens e use ferramentas (chat, documentos compartilhados) para registrar decisões.",
+                "Boa comunicação; continue buscando feedback e garantindo que todos compreendam as tarefas.",
+                "Muito boa comunicação — tome iniciativas em reuniões e ajude a mediar conversas quando necessário.",
+                "Excelente comunicador(a). Considere liderar apresentações e orientar colegas em comunicação clara."
+            ],
+            'trabalho em equipe': [
+                "Se envolver mais nas atividades do grupo ajudará; comece com tarefas pequenas e solicite responsabilidades claras.",
+                "Procure assumir papéis definidos e alinhar expectativas com colegas para aumentar sua contribuição.",
+                "Bom trabalho em equipe — foque em colaboração constante e no apoio mútuo nas entregas.",
+                "Muito bom — busque mediar conflitos e coordenar partes do trabalho para desenvolver liderança.",
+                "Excelente membro de equipe. Considere orientar novos colegas e organizar práticas colaborativas."
+            ],
+            'liderança': [
+                "Para desenvolver liderança, comece propondo pequenas atividades e coordenando entregas.",
+                "Busque oportunidades de assumir responsabilidades e pratique delegar e acompanhar tarefas.",
+                "Bom potencial de liderança; participe de decisões estratégicas e foque em comunicação assertiva.",
+                "Muito bom — desenvolva visão de ação e suporte a equipe em planejamento de tarefas maiores.",
+                "Excelente liderança. Considere orientar projetos e dar feedback construtivo ao time."
+            ],
+            'organiza': [
+                "Organização é essencial; experimente listas de tarefas e planejamento por blocos de tempo.",
+                "Defina prioridades e mantenha documentação das atividades para reduzir retrabalho.",
+                "Boa organização; mantenha controle de tarefas e compartilhe cronogramas com o grupo.",
+                "Muito boa organização — ajude a estruturar cronogramas do grupo e revisar entregas.",
+                "Excelente organização. Considere desenvolver templates/processos que beneficiem o time."
+            ],
+            'qualidad': [
+                "Invista em revisar o código/entregas e peça revisão de colegas para aumentar qualidade.",
+                "Pratique melhores práticas (testes, revisão) e peça feedback específico sobre pontos a melhorar.",
+                "Boa qualidade — mantenha revisão sistemática e busque redução de erros recorrentes.",
+                "Muito boa qualidade — contribua com padrões e revisões técnicas no time.",
+                "Excelente qualidade. Compartilhe práticas e auxilie colegas em melhoria de entregas."
+            ],
+        }
+
+        # select specific list if any key matches the competency name
+        chosen_list = None
+        for k, lst in specific.items():
+            if k in key:
+                chosen_list = lst
+                break
+
+        # if no specific messages found, use a generic set
+        if chosen_list is None:
+            chosen_list = [
+                "Sua média nesta competência é baixa. Dicas: converse com colegas e professor, pratique tarefas relacionadas e peça orientação concreta sobre o que melhorar.",
+                "Sua média está aquém do esperado. Identifique pontos fracos e trabalhe com exercícios dirigidos, revisão e organização.",
+                "Desempenho razoável; consolide boas práticas e peça feedback pontual para reduzir variação.",
+                "Ótimo desempenho. Mantenha hábitos e busque desafios para aprofundar a competência.",
+                "Excelente trabalho! Continue praticando e compartilhando conhecimento com colegas."
+            ]
+
+        # map label to index in chosen_list
+        idx_map = {
+            'Insuficiente': 0,
+            'Regular': 1,
+            'Bom': 2,
+            'Muito Bom': 3,
+            'Excelente': 4
+        }
+
+        texto = chosen_list[idx_map.get(label, 2)]
+        return (label, texto)
+
+    for comp in competencias:
+        media = medias_map.get(comp.id)
+        label, texto = escolher_feedback(comp.nome, media)
+        feedback_items.append({
+            'id': comp.id,
+            'nome': comp.nome,
+            'media': round(media, 2) if media is not None else None,
+            'label': label,
+            'texto': texto
+        })
+
+    return render(request, 'feedback_personalizado.html', {
+        'feedback_items': feedback_items,
+        'user_type': user_type,
+        'username': request.session.get('username')
+    })
 
 @login_required_custom
 def disciplinas(request):
@@ -1099,8 +1244,9 @@ def criar_grupo(request, id_atividade):
         nome_grupo = request.POST.get('nome_grupo')
         alunos_ids = request.POST.getlist('alunos')
         
-        if not nome_grupo or not alunos_ids:
-            messages.error(request, "O nome do grupo e pelo menos um aluno são obrigatórios.")
+        # Require a group name and at least 2 students (consistent with client-side validation)
+        if not nome_grupo or not alunos_ids or len(alunos_ids) < 2:
+            messages.error(request, "O nome do grupo e pelo menos 2 alunos são obrigatórios.")
             return redirect('criar_grupo', id_atividade=id_atividade)
         
         grupo = Grupo.objects.create(
@@ -2422,11 +2568,21 @@ def notas_professor_disciplinas(request):
     disciplinas = Disciplina.objects.filter(
         turmas__professor=professor
     ).distinct().order_by('nome')
+
+    # Debug logging to help diagnose cases where a professor sees no disciplinas
+    logger = logging.getLogger(__name__)
+    try:
+        logger.info(f"notas_professor_disciplinas: professor id={professor.idProfessor} nome={professor.nomeProf} -> disciplinas_count={disciplinas.count()}")
+    except Exception:
+        logger.info("notas_professor_disciplinas: unable to log professor/disciplina info")
     
     return render(request, 'notas_professor_disciplinas.html', {
         'disciplinas': disciplinas,
         'user_type': user_type,
-        'username': request.session.get('username')
+        'username': request.session.get('username'),
+        # debug context to help diagnose empty results
+        'debug_professor_id': getattr(professor, 'idProfessor', None),
+        'debug_disciplinas_count': disciplinas.count()
     })
 
 

@@ -61,10 +61,19 @@
                     <div class="row">
                         {% for competencia in atividade.competencias.all %}
                             <div class="col-md-6 mb-2">
-                                {% include '_header.html' %}
-        </div>
-        
-        {% if user_type == 'aluno' %}
+                                <div class="card h-100">
+                                    <div class="card-body">
+                                        <h6 class="mb-1">{{ competencia.nome }}</h6>
+                                        <p class="small text-muted mb-0">{{ competencia.descricao|default:'' }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div> {# end .row for competencias #}
+                </div> {# end .mt-3 Competências Avaliadas #}
++
++
++        {% if user_type == 'aluno' %}
             <div class="card mb-4">
                 <div class="card-header bg-info text-white">
                     <h4 class="mb-0">Meu Grupo: {{ grupo.nome }}</h4>
