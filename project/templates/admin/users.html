@@ -247,7 +247,8 @@
             
             var modal = $(this);
             modal.find('#userName').text(userName);
-            modal.find('#deleteForm').attr('action', '/admin/users/delete/' + userRole + '/' + userId + '/');
+            // Use the custom-admin URL prefix defined in urls.py
+            modal.find('#deleteForm').attr('action', '/custom-admin/users/delete/' + userRole + '/' + userId + '/');
         });
     </script>
 </body>

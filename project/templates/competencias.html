@@ -28,6 +28,21 @@
             {% endfor %}
         {% endif %}
         
+        <div class="card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Nome</th>
+                                <th>Descrição</th>
+                                <th>Atividades</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for competencia in competencias %}
+                                <tr>
                                     <td>{{ competencia.nome }}</td>
                                     <td>{{ competencia.descricao|truncatechars:100 }}</td>
                                     <td>{{ competencia.atividades.count }} atividades</td>

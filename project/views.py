@@ -11,27 +11,48 @@ import json
 from datetime import datetime
 
 from .models import (
-    Aluno, Professor, Coordenador, Nota, Atividade, Disciplina, TurmaAluno,
-    Turma, Grupo, Competencia, Curso, Semestre, Avaliacao, Notificacao
+    Aluno,
+    Professor,
+    Coordenador,
+    Nota,
+    Atividade,
+    Disciplina,
+    TurmaAluno,
+    Turma,
+    Grupo,
+    Competencia,
+    Curso,
+    Semestre,
+    Avaliacao,
+    Notificacao,
 )
 from .utils import (
-    hash_password, verify_password, enviar_email_redefinicao_senha,
-    generate_token, tem_permissao_competencias, obter_notificacoes_usuario,
-    criar_notificacao
+    hash_password,
+    verify_password,
+    enviar_email_redefinicao_senha,
+    generate_token,
+    tem_permissao_competencias,
+    obter_notificacoes_usuario,
+    criar_notificacao,
 )
+
 
 # Helper functions for role checks
 def is_aluno(user_type):
-    return user_type == 'aluno'
+    return user_type == "aluno"
+
 
 def is_professor(user_type):
-    return user_type == 'professor'
+    return user_type == "professor"
+
 
 def is_coordenador(user_type):
-    return user_type == 'coordenador'
+    return user_type == "coordenador"
+
 
 def is_admin(user_type):
-    return user_type == 'admin'
+    return user_type == "admin"
+
 
 # Helper functions for password hashing and verification
 def hash_password(password):
@@ -39,49 +60,61 @@ def hash_password(password):
     Create a hash of the password using SHA-256
     """
     from .utils import hash_password as utils_hash_password
+
     return utils_hash_password(password)
+
 
 def verify_password(input_password, stored_password):
     """
     Verify if the password matches the stored hash
     """
     from .utils import verify_password as utils_verify_password
+
     return utils_verify_password(input_password, stored_password)
+
 
 # Update the login_required_custom decorator to handle middleware bypass
 def login_required_custom(view_func):
     def wrapper(request, *args, **kwargs):
-        if 'user_type' not in request.session or 'user_id' not in request.session:
-            messages.error(request, "Você precisa estar logado para acessar esta página.")
-            return redirect('login')
-        
+        if "user_type" not in request.session or "user_id" not in request.session:
+            messages.error(
+                request, "Você precisa estar logado para acessar esta página."
+            )
+            return redirect("login")
+
         # Add additional validation to check if user_id is valid for the user_type
-        user_type = request.session['user_type']
-        user_id = request.session['user_id']
-        
+        user_type = request.session["user_type"]
+        user_id = request.session["user_id"]
+
         try:
-            if user_type == 'aluno':
+            if user_type == "aluno":
                 Aluno.objects.get(idAluno=user_id)
-            elif user_type == 'professor':
+            elif user_type == "professor":
                 Professor.objects.get(idProfessor=user_id)
-            elif user_type == 'coordenador':
+            elif user_type == "coordenador":
                 Coordenador.objects.get(id=user_id)
-            elif user_type == 'admin':
+            elif user_type == "admin":
                 from .models import Admin
+
                 Admin.objects.get(id=user_id)
             else:
                 # Unrecognized user type
                 messages.error(request, "Tipo de usuário não reconhecido.")
                 request.session.flush()
-                return redirect('login')
+                return redirect("login")
         except Exception:
             # If the user record doesn't exist, clear session and redirect to login
-            messages.error(request, "Sua sessão expirou ou é inválida. Por favor, faça login novamente.")
+            messages.error(
+                request,
+                "Sua sessão expirou ou é inválida. Por favor, faça login novamente.",
+            )
             request.session.flush()
-            return redirect('login')
-            
+            return redirect("login")
+
         return view_func(request, *args, **kwargs)
+
     return wrapper
+
 
 def login(request):
     if request.method == "POST":
@@ -91,65 +124,70 @@ def login(request):
         # Check if the user is an Aluno
         user = Aluno.objects.filter(emailAluno=email).first()
         if user and verify_password(password, user.senhaAluno):
-            request.session['user_type'] = 'aluno'
-            request.session['user_id'] = user.idAluno
-            request.session['username'] = user.nomeAluno
+            request.session["user_type"] = "aluno"
+            request.session["user_id"] = user.idAluno
+            request.session["username"] = user.nomeAluno
             messages.success(request, f"Bem-vindo, {user.nomeAluno}!")
             return redirect("home")
 
         # Check if the user is a Professor
         user = Professor.objects.filter(emailProf=email).first()
         if user and verify_password(password, user.senhaProf):
-            request.session['user_type'] = 'professor'
-            request.session['user_id'] = user.idProfessor
-            request.session['username'] = user.nomeProf
+            request.session["user_type"] = "professor"
+            request.session["user_id"] = user.idProfessor
+            request.session["username"] = user.nomeProf
             messages.success(request, f"Bem-vindo, Prof. {user.nomeProf}!")
             return redirect("home")
-            
+
         # Check if the user is a Coordenador
         user = Coordenador.objects.filter(emailCoord=email).first()
         if user and verify_password(password, user.senhaCoord):
-            request.session['user_type'] = 'coordenador'
-            request.session['user_id'] = user.id
-            request.session['username'] = user.nomeCoord
+            request.session["user_type"] = "coordenador"
+            request.session["user_id"] = user.id
+            request.session["username"] = user.nomeCoord
             messages.success(request, f"Bem-vindo, Coord. {user.nomeCoord}!")
             return redirect("home")
-        
+
         # Check if the user is an Admin
         from .models import Admin
+
         user = Admin.objects.filter(emailAdmin=email).first()
         if user and verify_password(password, user.senhaAdmin):
-            request.session['user_type'] = 'admin'
-            request.session['user_id'] = user.id
-            request.session['username'] = user.nomeAdmin
+            request.session["user_type"] = "admin"
+            request.session["user_id"] = user.id
+            request.session["username"] = user.nomeAdmin
             messages.success(request, f"Bem-vindo, Admin {user.nomeAdmin}!")
             return redirect("home")
         else:
             # Add an error message if credentials are incorrect
             messages.error(request, "Email ou senha incorretos.")
-    
+
     return render(request, "index.html")
 
+
 def logout(request):
-    if 'user_type' in request.session:
-        user_type = request.session.get('user_type')
-        username = request.session.get('username', '')
+    if "user_type" in request.session:
+        user_type = request.session.get("user_type")
+        username = request.session.get("username", "")
         request.session.flush()
-        messages.success(request, f"Logout realizado com sucesso. Até logo, {username}!")
-    return redirect('login')
+        messages.success(
+            request, f"Logout realizado com sucesso. Até logo, {username}!"
+        )
+    return redirect("login")
+
 
 def resetPassword(request):
     if request.method == "POST":
         email = request.POST.get("email", "")
-        
+
         # Import Admin model
         from .models import Admin
         from .utils import enviar_email_redefinicao_senha
-        
+
         # Check in all user types
         user = None
         user_type = None
-        
+
         if Aluno.objects.filter(emailAluno=email).exists():
             user = Aluno.objects.get(emailAluno=email)
             user_type = "aluno"
@@ -162,21 +200,28 @@ def resetPassword(request):
         elif Admin.objects.filter(emailAdmin=email).exists():
             user = Admin.objects.get(emailAdmin=email)
             user_type = "admin"
-            
+
         if user:
             # Generate token and send email
             email_sent = enviar_email_redefinicao_senha(user, user_type, request)
-            
+
             if email_sent:
-                messages.success(request, "Um link de redefinição de senha foi enviado para o seu email.")
+                messages.success(
+                    request,
+                    "Um link de redefinição de senha foi enviado para o seu email.",
+                )
             else:
-                messages.warning(request, "Não foi possível enviar o email de redefinição. Por favor, contate o administrador.")
-            
-            return redirect('login')
+                messages.warning(
+                    request,
+                    "Não foi possível enviar o email de redefinição. Por favor, contate o administrador.",
+                )
+
+            return redirect("login")
         else:
             messages.error(request, "Email não encontrado.")
-    
+
     return render(request, "forgot_password.html")
+
 
 def reset_password_confirm(request, token):
     """
@@ -185,146 +230,151 @@ def reset_password_confirm(request, token):
     # Find which user has this reset token
     user = None
     user_type = None
-    
+
     # Check in all user types
     aluno = Aluno.objects.filter(reset_token=token).first()
     if aluno:
         user = aluno
-        user_type = 'aluno'
+        user_type = "aluno"
     else:
         professor = Professor.objects.filter(reset_token=token).first()
         if professor:
             user = professor
-            user_type = 'professor'
+            user_type = "professor"
         else:
             coordenador = Coordenador.objects.filter(reset_token=token).first()
             if coordenador:
                 user = coordenador
-                user_type = 'coordenador'
+                user_type = "coordenador"
             else:
                 from .models import Admin
+
                 admin = Admin.objects.filter(reset_token=token).first()
                 if admin:
                     user = admin
-                    user_type = 'admin'
-    
+                    user_type = "admin"
+
     if not user:
-        messages.error(request, "Token inválido ou expirado. Por favor, solicite uma nova redefinição de senha.")
-        return redirect('login')
-    
-    if request.method == 'POST':
-        password = request.POST.get('password')
-        confirm_password = request.POST.get('confirm_password')
-        
+        messages.error(
+            request,
+            "Token inválido ou expirado. Por favor, solicite uma nova redefinição de senha.",
+        )
+        return redirect("login")
+
+    if request.method == "POST":
+        password = request.POST.get("password")
+        confirm_password = request.POST.get("confirm_password")
+
         if password != confirm_password:
             messages.error(request, "As senhas não correspondem.")
-            return render(request, 'reset_password_confirm.html', {'token': token})
-        
+            return render(request, "reset_password_confirm.html", {"token": token})
+
         # Update password based on user type
-        if user_type == 'aluno':
+        if user_type == "aluno":
             user.senhaAluno = hash_password(password)
-        elif user_type == 'professor':
+        elif user_type == "professor":
             user.senhaProf = hash_password(password)
-        elif user_type == 'coordenador':
+        elif user_type == "coordenador":
             user.senhaCoord = hash_password(password)
-        elif user_type == 'admin':
+        elif user_type == "admin":
             user.senhaAdmin = hash_password(password)
-        
+
         # Clear the reset token
         user.reset_token = None
         user.save()
-        
-        messages.success(request, "Senha redefinida com sucesso. Você já pode fazer login com sua nova senha.")
-        return redirect('login')
-    
-    return render(request, 'reset_password_confirm.html', {'token': token})
+
+        messages.success(
+            request,
+            "Senha redefinida com sucesso. Você já pode fazer login com sua nova senha.",
+        )
+        return redirect("login")
+
+    return render(request, "reset_password_confirm.html", {"token": token})
+
 
 @login_required_custom
 def home(request):
-    user_type = request.session.get('user_type')
-    user_id = request.session.get('user_id')
-    username = request.session.get('username', '')
-    
-    context = {
-        'user_type': user_type,
-        'username': username
-    }
-    
+    user_type = request.session.get("user_type")
+    user_id = request.session.get("user_id")
+    username = request.session.get("username", "")
+
+    context = {"user_type": user_type, "username": username}
+
     # Customized dashboard based on user type
-    if user_type == 'aluno':
+    if user_type == "aluno":
         aluno = Aluno.objects.get(idAluno=user_id)
-        
+
         # Get pending evaluations the same way they're calculated in atividades view
         turmas_aluno = TurmaAluno.objects.filter(aluno=aluno)
         all_atividades = Atividade.objects.filter(
             turma__in=[ta.turma for ta in turmas_aluno]
-        ).order_by('-dataEntrega', 'titulo')
-        
+        ).order_by("-dataEntrega", "titulo")
+
         pending_evaluations = 0
         for atividade in all_atividades:
             grupos = Grupo.objects.filter(atividade=atividade, alunos=aluno)
             if grupos.exists():
                 grupo = grupos.first()
                 colegas = grupo.alunos.exclude(idAluno=aluno.idAluno)
-                
+
                 for colega in colegas:
                     try:
                         avaliacao = Avaliacao.objects.get(
                             avaliador_aluno=aluno,
                             avaliado_aluno=colega,
-                            atividade=atividade
+                            atividade=atividade,
                         )
-                        
+
                         if not avaliacao.concluida:
                             pending_evaluations += 1
                     except Avaliacao.DoesNotExist:
                         pending_evaluations += 1
-        
+
         # Get recent activities
         recent_activities = all_atividades[:5]  # First 5 activities
-        
-        context.update({
-            'pending_evaluations': pending_evaluations,
-            'recent_activities': recent_activities
-        })
-        
-    elif user_type == 'professor':
+
+        context.update(
+            {
+                "pending_evaluations": pending_evaluations,
+                "recent_activities": recent_activities,
+            }
+        )
+
+    elif user_type == "professor":
         professor = Professor.objects.get(idProfessor=user_id)
         turmas = Turma.objects.filter(professor=professor)
-        recent_activities = Atividade.objects.filter(
-            turma__in=turmas
-        ).order_by('-dataEntrega', 'titulo')[:5]  # Sort by date and then alphabetically by title
-        
-        context.update({
-            'turmas_count': turmas.count(),
-            'recent_activities': recent_activities
-        })
-    
-    elif user_type == 'coordenador':
+        recent_activities = Atividade.objects.filter(turma__in=turmas).order_by(
+            "-dataEntrega", "titulo"
+        )[:5]  # Sort by date and then alphabetically by title
+
+        context.update(
+            {"turmas_count": turmas.count(), "recent_activities": recent_activities}
+        )
+
+    elif user_type == "coordenador":
         coordenador = Coordenador.objects.get(id=user_id)
         # Fix the FieldError by filtering using the correct relationship
         if coordenador.curso:
             cursos = [coordenador.curso]  # Just use the coordinator's course directly
         else:
             cursos = []
-        
-        context.update({
-            'cursos': cursos
-        })
-    
+
+        context.update({"cursos": cursos})
+
     return render(request, "home.html", context)
+
 
 @login_required_custom
 def atividades(request):
-    user_type = request.session.get('user_type')
-    user_id = request.session.get('user_id')
-    
-    if user_type == 'aluno':
+    user_type = request.session.get("user_type")
+    user_id = request.session.get("user_id")
+
+    if user_type == "aluno":
         aluno = Aluno.objects.get(idAluno=user_id)
         turmas_aluno = TurmaAluno.objects.filter(aluno=aluno)
         atividades = Atividade.objects.filter(
             turma__in=[ta.turma for ta in turmas_aluno]
-        ).order_by('-dataEntrega', 'titulo')
+        ).order_by("-dataEntrega", "titulo")
 
         # Add group info and pending evaluations
         pending_count = 0
@@ -339,7 +389,7 @@ def atividades(request):
                         avaliacao = Avaliacao.objects.get(
                             avaliador_aluno=aluno,
                             avaliado_aluno=colega,
-                            atividade=atividade
+                            atividade=atividade,
                         )
                         if not avaliacao.concluida:
                             atividade.pendente = True
@@ -351,248 +401,277 @@ def atividades(request):
                         break
 
         atividades_pendentes = [a for a in atividades if a.grupo and a.pendente]
+        pending_activities = atividades_pendentes
         print(f"Total pending evaluations in atividades view: {pending_count}")
-        return render(request, 'atividades.html', {
-            'atividades': atividades,
-            'atividades_pendentes': atividades_pendentes,
-            'user_type': user_type
-        })
-    elif user_type == 'professor':
+        return render(
+            request,
+            "atividades.html",
+            {
+                "atividades": atividades,
+                "atividades_pendentes": atividades_pendentes,
+                "pending_activities": pending_activities,
+                "user_type": user_type,
+            },
+        )
+    elif user_type == "professor":
         professor = Professor.objects.get(idProfessor=user_id)
         turmas = Turma.objects.filter(professor=professor)
-        atividades = Atividade.objects.filter(
-            turma__in=turmas
-        ).order_by('-dataEntrega', 'titulo')  # Sort by date and then alphabetically by title
-        
-    elif user_type == 'coordenador':
+        atividades = Atividade.objects.filter(turma__in=turmas).order_by(
+            "-dataEntrega", "titulo"
+        )  # Sort by date and then alphabetically by title
+
+    elif user_type == "coordenador":
         coordenador = Coordenador.objects.get(id=user_id)
         # Use the coordinator's course directly
         if coordenador.curso:
             disciplinas = Disciplina.objects.filter(curso=coordenador.curso)
             turmas = Turma.objects.filter(disciplina__in=disciplinas)
-            atividades = Atividade.objects.filter(
-                turma__in=turmas
-            ).order_by('-dataEntrega', 'titulo')  # Sort by date and then alphabetically by title
+            atividades = Atividade.objects.filter(turma__in=turmas).order_by(
+                "-dataEntrega", "titulo"
+            )  # Sort by date and then alphabetically by title
         else:
             atividades = Atividade.objects.none()
-    
+
     else:
-        atividades = Atividade.objects.all().order_by('-dataEntrega', 'titulo')  # Sort by date and then alphabetically by title
-    
-    return render(request, 'atividades.html', {'atividades': atividades, 'user_type': user_type})
+        atividades = Atividade.objects.all().order_by(
+            "-dataEntrega", "titulo"
+        )  # Sort by date and then alphabetically by title
+
+    return render(
+        request, "atividades.html", {"atividades": atividades, "user_type": user_type}
+    )
+
 
 @login_required_custom
 def atividade_detalhe(request, id_atividade):
-    user_type = request.session.get('user_type')
-    user_id = request.session.get('user_id')
-    
+    user_type = request.session.get("user_type")
+    user_id = request.session.get("user_id")
+
     atividade = get_object_or_404(Atividade, id=id_atividade)
-    
-    if user_type == 'aluno':
+
+    if user_type == "aluno":
         aluno = Aluno.objects.get(idAluno=user_id)
         grupos = Grupo.objects.filter(atividade=atividade, alunos=aluno)
         if not grupos.exists():
             messages.error(request, "Você não pertence a nenhum grupo nesta atividade.")
-            return redirect('atividades')
-        
+            return redirect("atividades")
+
         grupo = grupos.first()
-        colegas = grupo.alunos.all().order_by('nomeAluno')  # Sort colleagues alphabetically
-        
+        colegas = grupo.alunos.all().order_by(
+            "nomeAluno"
+        )  # Sort colleagues alphabetically
+
         # Check for pending evaluations (both peer and self-evaluations)
         avaliacoes = []
         auto_avaliacao = None
-        
+
         for colega in colegas:
             avaliacao, created = Avaliacao.objects.get_or_create(
                 avaliador_aluno=aluno,
                 avaliado_aluno=colega,
                 atividade=atividade,
-                defaults={
-                    'concluida': False,
-                    'is_self_assessment': (colega == aluno)
-                }
+                defaults={"concluida": False, "is_self_assessment": (colega == aluno)},
             )
-            
+
             # Update is_self_assessment if the evaluation already existed
             if not created and avaliacao.is_self_assessment != (colega == aluno):
-                avaliacao.is_self_assessment = (colega == aluno)
+                avaliacao.is_self_assessment = colega == aluno
                 avaliacao.save()
-            
+
             if colega == aluno:  # Self-evaluation
-                auto_avaliacao = {
-                    'colega': colega,
-                    'avaliacao': avaliacao
-                }
+                auto_avaliacao = {"colega": colega, "avaliacao": avaliacao}
             else:  # Peer evaluation
-                avaliacoes.append({
-                    'colega': colega,
-                    'avaliacao': avaliacao
-                })
-        
-        return render(request, 'atividade_detalhe.html', {
-            'atividade': atividade,
-            'grupo': grupo,
-            'avaliacoes': avaliacoes,
-            'auto_avaliacao': auto_avaliacao,
-            'user_type': user_type
-        })
-    
-    elif user_type in ['professor', 'coordenador', 'admin']:
-        grupos = Grupo.objects.filter(atividade=atividade).order_by('nome')  # Sort groups alphabetically
-        return render(request, 'atividade_detalhe.html', {
-            'atividade': atividade,
-            'grupos': grupos,
-            'user_type': user_type
-        })
-    
+                avaliacoes.append({"colega": colega, "avaliacao": avaliacao})
+
+        return render(
+            request,
+            "atividade_detalhe.html",
+            {
+                "atividade": atividade,
+                "grupo": grupo,
+                "avaliacoes": avaliacoes,
+                "auto_avaliacao": auto_avaliacao,
+                "user_type": user_type,
+            },
+        )
+
+    elif user_type in ["professor", "coordenador", "admin"]:
+        grupos = Grupo.objects.filter(atividade=atividade).order_by(
+            "nome"
+        )  # Sort groups alphabetically
+        return render(
+            request,
+            "atividade_detalhe.html",
+            {"atividade": atividade, "grupos": grupos, "user_type": user_type},
+        )
+
     # Fallback for any unhandled user types
     messages.error(request, "Você não tem permissão para visualizar esta atividade.")
-    return redirect('atividades')
+    return redirect("atividades")
+
 
 @login_required_custom
 def avaliar_colega(request, id_avaliacao):
     """View para avaliar um colega"""
-    user_type = request.session.get('user_type')
-    user_id = request.session.get('user_id')
-    
-    if user_type != 'aluno':
+    user_type = request.session.get("user_type")
+    user_id = request.session.get("user_id")
+
+    if user_type != "aluno":
         messages.error(request, "Apenas alunos podem realizar avaliações.")
-        return redirect('home')
-    
+        return redirect("home")
+
     avaliacao = get_object_or_404(Avaliacao, id=id_avaliacao)
     aluno = Aluno.objects.get(idAluno=user_id)
-    
+
     # Check if the logged user is the evaluator
     if avaliacao.avaliador_aluno != aluno:
         messages.error(request, "Você não tem permissão para realizar esta avaliação.")
-        return redirect('atividades')
-    
+        return redirect("atividades")
+
     # Get competências from the activity
     competencias = avaliacao.atividade.competencias.all()
-    
-    if request.method == 'POST':
+
+    if request.method == "POST":
         # Verify if the evaluation is already completed
         if avaliacao.concluida:
             messages.warning(request, "Esta avaliação já foi concluída.")
-            return redirect('atividade_detalhe', id_atividade=avaliacao.atividade.id)
-        
+            return redirect("atividade_detalhe", id_atividade=avaliacao.atividade.id)
+
         for competencia in competencias:
-            nota_valor = request.POST.get(f'competencia_{competencia.id}')
+            nota_valor = request.POST.get(f"competencia_{competencia.id}")
             if not nota_valor:
-                messages.error(request, f"A nota para a competência {competencia.nome} é obrigatória.")
-                return redirect('avaliar_colega', id_avaliacao=id_avaliacao)
-            
+                messages.error(
+                    request,
+                    f"A nota para a competência {competencia.nome} é obrigatória.",
+                )
+                return redirect("avaliar_colega", id_avaliacao=id_avaliacao)
+
             try:
                 nota_valor = int(nota_valor)
                 if nota_valor < 1 or nota_valor > 5:
                     messages.error(request, "As notas devem estar entre 1 e 5.")
-                    return redirect('avaliar_colega', id_avaliacao=id_avaliacao)
-                
+                    return redirect("avaliar_colega", id_avaliacao=id_avaliacao)
+
                 Nota.objects.create(
                     avaliacao=avaliacao,
                     competencia=competencia,
                     nota=nota_valor,
-                    dataAvaliacao=timezone.now()
+                    dataAvaliacao=timezone.now(),
                 )
             except ValueError:
                 messages.error(request, "Valor de nota inválido.")
-                return redirect('avaliar_colega', id_avaliacao=id_avaliacao)
-        
+                return redirect("avaliar_colega", id_avaliacao=id_avaliacao)
+
         avaliacao.concluida = True
         avaliacao.save()
-        
+
         # Notificar o aluno avaliado
         criar_notificacao(
             titulo="Nova avaliação recebida",
             mensagem=f"{aluno.nomeAluno} concluiu sua avaliação na atividade '{avaliacao.atividade.titulo}'.",
             destinatario=avaliacao.avaliado_aluno,
             tipo="info",
-            link=f"/atividade/{avaliacao.atividade.id}/"
+            link=f"/atividade/{avaliacao.atividade.id}/",
         )
-        
-        messages.success(request, "Avaliação realizada com sucesso!")
-        return redirect('atividade_detalhe', id_atividade=avaliacao.atividade.id)
 
-    return render(request, 'avaliar_colega.html', {
-        'avaliacao': avaliacao,
-        'competencias': competencias,
-        'user_type': user_type
-    })
+        messages.success(request, "Avaliação realizada com sucesso!")
+        return redirect("atividade_detalhe", id_atividade=avaliacao.atividade.id)
+
+    return render(
+        request,
+        "avaliar_colega.html",
+        {"avaliacao": avaliacao, "competencias": competencias, "user_type": user_type},
+    )
+
 
 @login_required_custom
 def auto_avaliar(request, id_avaliacao):
     """View para auto-avaliação do aluno"""
-    user_type = request.session.get('user_type')
-    user_id = request.session.get('user_id')
-    
-    if user_type != 'aluno':
+    user_type = request.session.get("user_type")
+    user_id = request.session.get("user_id")
+
+    if user_type != "aluno":
         messages.error(request, "Apenas alunos podem realizar auto-avaliações.")
-        return redirect('home')
-    
+        return redirect("home")
+
     avaliacao = get_object_or_404(Avaliacao, id=id_avaliacao)
     aluno = Aluno.objects.get(idAluno=user_id)
-    
+
     # Check if the logged user is the evaluator and if it's a self-assessment
     if avaliacao.avaliador_aluno != aluno or not avaliacao.is_self_assessment:
-        messages.error(request, "Você não tem permissão para realizar esta auto-avaliação.")
-        return redirect('atividades')
-    
+        messages.error(
+            request, "Você não tem permissão para realizar esta auto-avaliação."
+        )
+        return redirect("atividades")
+
     # Get competências from the activity
     competencias = avaliacao.atividade.competencias.all()
-    
-    if request.method == 'POST':
+
+    if request.method == "POST":
         # Verify if the evaluation is already completed
         if avaliacao.concluida:
             messages.warning(request, "Esta auto-avaliação já foi concluída.")
-            return redirect('atividade_detalhe', id_atividade=avaliacao.atividade.id)
-        
+            return redirect("atividade_detalhe", id_atividade=avaliacao.atividade.id)
+
         for competencia in competencias:
-            nota_valor = request.POST.get(f'competencia_{competencia.id}')
+            nota_valor = request.POST.get(f"competencia_{competencia.id}")
             if not nota_valor:
-                messages.error(request, f"A nota para a competência {competencia.nome} é obrigatória.")
-                return redirect('auto_avaliar', id_avaliacao=id_avaliacao)
-            
+                messages.error(
+                    request,
+                    f"A nota para a competência {competencia.nome} é obrigatória.",
+                )
+                return redirect("auto_avaliar", id_avaliacao=id_avaliacao)
+
             try:
                 nota_valor = int(nota_valor)
                 if nota_valor < 1 or nota_valor > 5:
                     messages.error(request, "As notas devem estar entre 1 e 5.")
-                    return redirect('auto_avaliar', id_avaliacao=id_avaliacao)
-                
+                    return redirect("auto_avaliar", id_avaliacao=id_avaliacao)
+
                 Nota.objects.create(
                     avaliacao=avaliacao,
                     competencia=competencia,
                     nota=nota_valor,
-                    dataAvaliacao=timezone.now()
+                    dataAvaliacao=timezone.now(),
                 )
             except ValueError:
                 messages.error(request, "Valor de nota inválido.")
-                return redirect('auto_avaliar', id_avaliacao=id_avaliacao)
-        
+                return redirect("auto_avaliar", id_avaliacao=id_avaliacao)
+
         avaliacao.concluida = True
         avaliacao.save()
-        
+
         messages.success(request, "Auto-avaliação realizada com sucesso!")
-        return redirect('atividade_detalhe', id_atividade=avaliacao.atividade.id)
-    
-    return render(request, 'auto_avaliar.html', {
-        'avaliacao': avaliacao,
-        'competencias': competencias,
-        'user_type': user_type
-    })
+        return redirect("atividade_detalhe", id_atividade=avaliacao.atividade.id)
+
+    return render(
+        request,
+        "auto_avaliar.html",
+        {"avaliacao": avaliacao, "competencias": competencias, "user_type": user_type},
+    )
+
 
 @login_required_custom
 def notas(request):
-    user_type = request.session.get('user_type', '')
-    user_id = request.session.get('user_id', '')
-    
-    if user_type == 'aluno':
+    user_type = request.session.get("user_type", "")
+    user_id = request.session.get("user_id", "")
+
+    if user_type == "aluno":
         aluno = Aluno.objects.get(idAluno=user_id)
-        
+
         # Fetch Nota records directly for this student (most recent first)
-        notas_qs = Nota.objects.filter(
-            avaliacao__avaliado_aluno=aluno,
-            avaliacao__concluida=True
-        ).select_related('competencia', 'avaliacao', 'avaliacao__atividade', 'avaliacao__avaliador_aluno').order_by('-dataAvaliacao')
+        notas_qs = (
+            Nota.objects.filter(
+                avaliacao__avaliado_aluno=aluno, avaliacao__concluida=True
+            )
+            .select_related(
+                "competencia",
+                "avaliacao",
+                "avaliacao__atividade",
+                "avaliacao__avaliador_aluno",
+            )
+            .order_by("-dataAvaliacao")
+        )
 
         # Separate self-assessments from peer evaluations using the same base queryset
         notas_auto = notas_qs.filter(avaliacao__is_self_assessment=True)
@@ -600,95 +679,99 @@ def notas(request):
 
         # Use notas_qs as the main 'notas' variable for template (ordered recent first)
         notas = notas_qs
-        
+
         # Prepare data for charts - evolution over time
         competencias = Competencia.objects.all()
         chart_data = {}
         for competencia in competencias:
             notas_competencia = notas.filter(competencia=competencia)
             if notas_competencia.exists():
-                chart_data[competencia.nome] = {
-                    'labels': [],
-                    'data': []
-                }
-                
+                chart_data[competencia.nome] = {"labels": [], "data": []}
+
                 # Group by semester
-                semestres = Semestre.objects.all().order_by('ano', 'periodo')
+                semestres = Semestre.objects.all().order_by("ano", "periodo")
                 for semestre in semestres:
                     notas_semestre = notas_competencia.filter(
                         avaliacao__atividade__turma__semestre=semestre
                     )
                     if notas_semestre.exists():
-                        media = notas_semestre.aggregate(Avg('nota'))['nota__avg']
-                        chart_data[competencia.nome]['labels'].append(f"{semestre.ano}/{semestre.periodo}")
-                        chart_data[competencia.nome]['data'].append(float(media))
-        
+                        media = notas_semestre.aggregate(Avg("nota"))["nota__avg"]
+                        chart_data[competencia.nome]["labels"].append(
+                            f"{semestre.ano}/{semestre.periodo}"
+                        )
+                        chart_data[competencia.nome]["data"].append(float(media))
+
         # Calculate average by competency for radar chart - separated by type
         radar_data = {
-            'labels': [c.nome for c in competencias],
-            'media_geral': [],
-            'auto_avaliacao': []
+            "labels": [c.nome for c in competencias],
+            "media_geral": [],
+            "auto_avaliacao": [],
         }
-        
+
         for competencia in competencias:
             # Média geral (todas as avaliações)
             notas_comp_geral = notas.filter(competencia=competencia)
             if notas_comp_geral.exists():
-                media_geral = notas_comp_geral.aggregate(Avg('nota'))['nota__avg']
-                radar_data['media_geral'].append(float(media_geral))
+                media_geral = notas_comp_geral.aggregate(Avg("nota"))["nota__avg"]
+                radar_data["media_geral"].append(float(media_geral))
             else:
-                radar_data['media_geral'].append(0)
-            
+                radar_data["media_geral"].append(0)
+
             # Média das auto-avaliações
             notas_comp_auto = notas_auto.filter(competencia=competencia)
             if notas_comp_auto.exists():
-                media_auto = notas_comp_auto.aggregate(Avg('nota'))['nota__avg']
-                radar_data['auto_avaliacao'].append(float(media_auto))
+                media_auto = notas_comp_auto.aggregate(Avg("nota"))["nota__avg"]
+                radar_data["auto_avaliacao"].append(float(media_auto))
             else:
-                radar_data['auto_avaliacao'].append(0)
-        
+                radar_data["auto_avaliacao"].append(0)
+
         context = {
-            'notas': notas,
-            'notas_auto': notas_auto,
-            'notas_pares': notas_pares,
-            'chart_data': json.dumps(chart_data),
-            'radar_data': json.dumps(radar_data),
-            'user_type': user_type
+            "notas": notas,
+            "notas_auto": notas_auto,
+            "notas_pares": notas_pares,
+            "chart_data": json.dumps(chart_data),
+            "radar_data": json.dumps(radar_data),
+            "user_type": user_type,
         }
-    
-    elif user_type == 'professor':
+
+    elif user_type == "professor":
         # Redirect professors to discipline selection page
-        return redirect('notas_professor_disciplinas')
-        
-    elif user_type == 'coordenador':
+        return redirect("notas_professor_disciplinas")
+
+    elif user_type == "coordenador":
         coordenador = Coordenador.objects.get(id=user_id)
         cursos = Curso.objects.filter(coordenadores=coordenador)
 
         # Handle optional semester filter from GET (formats accepted: 'YYYY-P' or 'YYYY/P')
-        semestre_param = request.GET.get('semester', '')
+        semestre_param = request.GET.get("semester", "")
         selected_semestre = None
         if semestre_param:
-            semestre_param = semestre_param.replace('/', '-')
-            parts = semestre_param.split('-')
+            semestre_param = semestre_param.replace("/", "-")
+            parts = semestre_param.split("-")
             if len(parts) == 2 and parts[0].isdigit() and parts[1].isdigit():
                 ano = int(parts[0])
                 periodo = int(parts[1])
-                selected_semestre = Semestre.objects.filter(ano=ano, periodo=periodo).first()
+                selected_semestre = Semestre.objects.filter(
+                    ano=ano, periodo=periodo
+                ).first()
 
         # Gather disciplines for coordinator's courses
-        disciplinas = Disciplina.objects.filter(curso__in=cursos).distinct().order_by('nome')
+        disciplinas = (
+            Disciplina.objects.filter(curso__in=cursos).distinct().order_by("nome")
+        )
 
         # Get turmas for these disciplines, optionally filtered by semester
         if selected_semestre:
-            turmas = Turma.objects.filter(disciplina__in=disciplinas, semestre=selected_semestre).distinct()
+            turmas = Turma.objects.filter(
+                disciplina__in=disciplinas, semestre=selected_semestre
+            ).distinct()
         else:
             turmas = Turma.objects.filter(disciplina__in=disciplinas).distinct()
 
         # Get only concluded evaluations related to these turmas
         notas_qs = Nota.objects.filter(
-            avaliacao__atividade__turma__in=turmas,
-            avaliacao__concluida=True
-        ).select_related('competencia', 'avaliacao', 'avaliacao__atividade')
+            avaliacao__atividade__turma__in=turmas, avaliacao__concluida=True
+        ).select_related("competencia", "avaliacao", "avaliacao__atividade")
 
         # Prepare disciplinas_data: averages per disciplina separated by competencia
         competencias = list(Competencia.objects.all())
@@ -696,78 +779,81 @@ def notas(request):
         disciplinas_datasets = []
         # color palette
         palette = [
-            'rgba(255, 99, 132, 0.7)',
-            'rgba(54, 162, 235, 0.7)',
-            'rgba(255, 206, 86, 0.7)',
-            'rgba(75, 192, 192, 0.7)',
-            'rgba(153, 102, 255, 0.7)'
+            "rgba(255, 99, 132, 0.7)",
+            "rgba(54, 162, 235, 0.7)",
+            "rgba(255, 206, 86, 0.7)",
+            "rgba(75, 192, 192, 0.7)",
+            "rgba(153, 102, 255, 0.7)",
         ]
         for idx, competencia in enumerate(competencias):
             data_vals = []
             for disciplina in disciplinas:
                 avg_res = notas_qs.filter(
                     avaliacao__atividade__turma__disciplina=disciplina,
-                    competencia=competencia
-                ).aggregate(Avg('nota'))['nota__avg']
+                    competencia=competencia,
+                ).aggregate(Avg("nota"))["nota__avg"]
                 data_vals.append(float(avg_res) if avg_res is not None else 0)
 
-            disciplinas_datasets.append({
-                'label': competencia.nome,
-                'data': data_vals,
-                'backgroundColor': palette[idx % len(palette)],
-                'borderColor': palette[idx % len(palette)].replace('0.7', '1'),
-                'borderWidth': 1
-            })
+            disciplinas_datasets.append(
+                {
+                    "label": competencia.nome,
+                    "data": data_vals,
+                    "backgroundColor": palette[idx % len(palette)],
+                    "borderColor": palette[idx % len(palette)].replace("0.7", "1"),
+                    "borderWidth": 1,
+                }
+            )
 
         disciplinas_data = {
-            'labels': disciplinas_labels,
-            'datasets': disciplinas_datasets
+            "labels": disciplinas_labels,
+            "datasets": disciplinas_datasets,
         }
 
         # Prepare turmas_data: averages per turma separated by competencia
-        turmas_labels = [f"{t.disciplina.codigo} - {t.codigo} ({str(t.semestre.ano)[-2:]}/{t.semestre.periodo})" for t in turmas]
+        turmas_labels = [
+            f"{t.disciplina.codigo} - {t.codigo} ({str(t.semestre.ano)[-2:]}/{t.semestre.periodo})"
+            for t in turmas
+        ]
         turmas_datasets = []
         for idx, competencia in enumerate(competencias):
             data_vals = []
             for turma in turmas:
                 avg_res = notas_qs.filter(
-                    avaliacao__atividade__turma=turma,
-                    competencia=competencia
-                ).aggregate(Avg('nota'))['nota__avg']
+                    avaliacao__atividade__turma=turma, competencia=competencia
+                ).aggregate(Avg("nota"))["nota__avg"]
                 data_vals.append(float(avg_res) if avg_res is not None else 0)
 
-            turmas_datasets.append({
-                'label': competencia.nome,
-                'data': data_vals,
-                'backgroundColor': palette[idx % len(palette)],
-                'borderColor': palette[idx % len(palette)].replace('0.7', '1'),
-                'borderWidth': 1
-            })
+            turmas_datasets.append(
+                {
+                    "label": competencia.nome,
+                    "data": data_vals,
+                    "backgroundColor": palette[idx % len(palette)],
+                    "borderColor": palette[idx % len(palette)].replace("0.7", "1"),
+                    "borderWidth": 1,
+                }
+            )
 
-        turmas_data = {
-            'labels': turmas_labels,
-            'datasets': turmas_datasets
-        }
+        turmas_data = {"labels": turmas_labels, "datasets": turmas_datasets}
 
-        semesters = Semestre.objects.all().order_by('-ano', '-periodo')
+        semesters = Semestre.objects.all().order_by("-ano", "-periodo")
 
         context = {
-            'cursos': cursos,
-            'disciplinas': disciplinas,
-            'notas': notas_qs,
-            'disciplinas_data': json.dumps(disciplinas_data),
-            'turmas_data': json.dumps(turmas_data),
-            'user_type': user_type,
-            'semesters': semesters,
-            'selected_semestre': selected_semestre
+            "cursos": cursos,
+            "disciplinas": disciplinas,
+            "notas": notas_qs,
+            "disciplinas_data": json.dumps(disciplinas_data),
+            "turmas_data": json.dumps(turmas_data),
+            "user_type": user_type,
+            "semesters": semesters,
+            "selected_semestre": selected_semestre,
         }
-    
+
     else:
         # Without proper authentication, just show sample data
         notas = Nota.objects.all()[:10]  # Limit to 10 for demo
-        context = {'notas': notas}
-        
-    return render(request, 'notas.html', context)
+        context = {"notas": notas}
+
+    return render(request, "notas.html", context)
 
 
 @login_required_custom
@@ -777,28 +863,30 @@ def feedback_personalizado(request):
     Mostra a média por competência e um texto explicativo/sugestão baseado na faixa
     da média: [0-1), [1-2), [2-3), [3-4), [4-5].
     """
-    user_type = request.session.get('user_type')
-    user_id = request.session.get('user_id')
+    user_type = request.session.get("user_type")
+    user_id = request.session.get("user_id")
 
-    if user_type != 'aluno':
+    if user_type != "aluno":
         messages.error(request, "Apenas alunos podem acessar esta página de feedback.")
-        return redirect('home')
+        return redirect("home")
 
     aluno = Aluno.objects.get(idAluno=user_id)
 
     # Compute average per competency for this student
     from django.db.models import Avg
-    medias_qs = Nota.objects.filter(
-        avaliacao__avaliado_aluno=aluno,
-        avaliacao__concluida=True
-    ).values('competencia__id', 'competencia__nome').annotate(media=Avg('nota'))
+
+    medias_qs = (
+        Nota.objects.filter(avaliacao__avaliado_aluno=aluno, avaliacao__concluida=True)
+        .values("competencia__id", "competencia__nome")
+        .annotate(media=Avg("nota"))
+    )
 
     # Map competency id -> média
-    medias_map = {item['competencia__id']: item['media'] for item in medias_qs}
+    medias_map = {item["competencia__id"]: item["media"] for item in medias_qs}
 
     # Prepare feedback messages for each competency
     feedback_items = []
-    competencias = Competencia.objects.all().order_by('nome')
+    competencias = Competencia.objects.all().order_by("nome")
 
     def escolher_feedback(comp_nome, media):
         """Retorna (label, texto) para a média fornecida, usando mensagens específicas por competência.
@@ -807,73 +895,68 @@ def feedback_personalizado(request):
         media: float or None
         """
         if media is None:
-            return ("Sem dados", "Ainda não há avaliações suficientes para esta competência. Participe de atividades e solicite feedback para gerar uma média.")
+            return (
+                "Sem dados",
+                "Ainda não há avaliações suficientes para esta competência. Participe de atividades e solicite feedback para gerar uma média.",
+            )
 
         # helper to choose label by media
-        if media < 1.0:
+        # New grading bands requested: Insuficiente (<2), Regular (<3), Bom (<4), Excelente (>=4)
+        if media < 2.0:
             label = "Insuficiente"
-        elif media < 2.0:
-            label = "Regular"
         elif media < 3.0:
-            label = "Bom"
+            label = "Regular"
         elif media < 4.0:
-            label = "Muito Bom"
+            label = "Bom"
         else:
             label = "Excelente"
 
         # normalize competence name for matching
-        key = (comp_nome or '').lower()
+        key = (comp_nome or "").lower()
 
         # Specific suggestions per common competencies (match by keywords)
         specific = {
-            'pontualidad': [
+            "pontualidad": [
                 "Atrasos frequentes indicam dificuldade em gerenciar prazos. Estabeleça lembretes, antecipe tarefas e comunique-se com o grupo se precisar de redistribuição de tarefas.",
                 "Melhore seu planejamento: defina metas diárias, use alarmes e combine checkpoints curtos no grupo para reduzir atrasos.",
                 "Continue aprimorando sua gestão de tempo; documente prazos e revise os progressos regularmente.",
-                "Excelente pontualidade — mantenha uma rotina consistente e ajude colegas a organizarem entregas em conjunto.",
-                "Excelente trabalho. Considere liderar prazos do grupo e compartilhar suas técnicas de organização."
+                "Excelente trabalho. Considere liderar prazos do grupo e compartilhar suas técnicas de organização.",
             ],
-            'pontualidade': [
+            "pontualidade": [
                 "Atrasos frequentes indicam dificuldade em gerenciar prazos. Estabeleça lembretes, antecipe tarefas e comunique-se com o grupo se precisar de redistribuição de tarefas.",
                 "Melhore seu planejamento: defina metas diárias, use alarmes e combine checkpoints curtos no grupo para reduzir atrasos.",
                 "Continue aprimorando sua gestão de tempo; documente prazos e revise os progressos regularmente.",
-                "Muito bom — mantenha a rotina e ofereça ajuda ao grupo em organização de entregas.",
-                "Excelente trabalho. Considere liderar prazos do grupo e compartilhar suas técnicas de organização."
+                "Excelente trabalho. Considere liderar prazos do grupo e compartilhar suas técnicas de organização.",
             ],
-            'comunica': [
+            "comunica": [
                 "Dificuldades de comunicação podem comprometer o trabalho em equipe. Pratique expressar ideias claras e confirme entendimento com perguntas simples.",
                 "Procure ser mais claro(a) nas mensagens e use ferramentas (chat, documentos compartilhados) para registrar decisões.",
                 "Boa comunicação; continue buscando feedback e garantindo que todos compreendam as tarefas.",
-                "Muito boa comunicação — tome iniciativas em reuniões e ajude a mediar conversas quando necessário.",
-                "Excelente comunicador(a). Considere liderar apresentações e orientar colegas em comunicação clara."
+                "Excelente comunicador(a). Considere liderar apresentações e orientar colegas em comunicação clara.",
             ],
-            'trabalho em equipe': [
+            "trabalho em equipe": [
                 "Se envolver mais nas atividades do grupo ajudará; comece com tarefas pequenas e solicite responsabilidades claras.",
                 "Procure assumir papéis definidos e alinhar expectativas com colegas para aumentar sua contribuição.",
                 "Bom trabalho em equipe — foque em colaboração constante e no apoio mútuo nas entregas.",
-                "Muito bom — busque mediar conflitos e coordenar partes do trabalho para desenvolver liderança.",
-                "Excelente membro de equipe. Considere orientar novos colegas e organizar práticas colaborativas."
+                "Excelente membro de equipe. Considere orientar novos colegas e organizar práticas colaborativas.",
             ],
-            'liderança': [
+            "liderança": [
                 "Para desenvolver liderança, comece propondo pequenas atividades e coordenando entregas.",
                 "Busque oportunidades de assumir responsabilidades e pratique delegar e acompanhar tarefas.",
                 "Bom potencial de liderança; participe de decisões estratégicas e foque em comunicação assertiva.",
-                "Muito bom — desenvolva visão de ação e suporte a equipe em planejamento de tarefas maiores.",
-                "Excelente liderança. Considere orientar projetos e dar feedback construtivo ao time."
+                "Excelente liderança. Considere orientar projetos e dar feedback construtivo ao time.",
             ],
-            'organiza': [
+            "organiza": [
                 "Organização é essencial; experimente listas de tarefas e planejamento por blocos de tempo.",
                 "Defina prioridades e mantenha documentação das atividades para reduzir retrabalho.",
                 "Boa organização; mantenha controle de tarefas e compartilhe cronogramas com o grupo.",
-                "Muito boa organização — ajude a estruturar cronogramas do grupo e revisar entregas.",
-                "Excelente organização. Considere desenvolver templates/processos que beneficiem o time."
+                "Excelente organização. Considere desenvolver templates/processos que beneficiem o time.",
             ],
-            'qualidad': [
+            "qualidad": [
                 "Invista em revisar o código/entregas e peça revisão de colegas para aumentar qualidade.",
                 "Pratique melhores práticas (testes, revisão) e peça feedback específico sobre pontos a melhorar.",
                 "Boa qualidade — mantenha revisão sistemática e busque redução de erros recorrentes.",
-                "Muito boa qualidade — contribua com padrões e revisões técnicas no time.",
-                "Excelente qualidade. Compartilhe práticas e auxilie colegas em melhoria de entregas."
+                "Excelente qualidade. Compartilhe práticas e auxilie colegas em melhoria de entregas.",
             ],
         }
 
@@ -890,17 +973,15 @@ def feedback_personalizado(request):
                 "Sua média nesta competência é baixa. Dicas: converse com colegas e professor, pratique tarefas relacionadas e peça orientação concreta sobre o que melhorar.",
                 "Sua média está aquém do esperado. Identifique pontos fracos e trabalhe com exercícios dirigidos, revisão e organização.",
                 "Desempenho razoável; consolide boas práticas e peça feedback pontual para reduzir variação.",
-                "Ótimo desempenho. Mantenha hábitos e busque desafios para aprofundar a competência.",
-                "Excelente trabalho! Continue praticando e compartilhando conhecimento com colegas."
+                "Excelente trabalho! Continue praticando e compartilhando conhecimento com colegas.",
             ]
 
-        # map label to index in chosen_list
+        # map label to index in chosen_list (updated to 4 levels)
         idx_map = {
-            'Insuficiente': 0,
-            'Regular': 1,
-            'Bom': 2,
-            'Muito Bom': 3,
-            'Excelente': 4
+            "Insuficiente": 0,
+            "Regular": 1,
+            "Bom": 2,
+            "Excelente": 3,
         }
 
         texto = chosen_list[idx_map.get(label, 2)]
@@ -909,286 +990,352 @@ def feedback_personalizado(request):
     for comp in competencias:
         media = medias_map.get(comp.id)
         label, texto = escolher_feedback(comp.nome, media)
-        feedback_items.append({
-            'id': comp.id,
-            'nome': comp.nome,
-            'media': round(media, 2) if media is not None else None,
-            'label': label,
-            'texto': texto
-        })
+        feedback_items.append(
+            {
+                "id": comp.id,
+                "nome": comp.nome,
+                "media": round(media, 2) if media is not None else None,
+                "label": label,
+                "texto": texto,
+            }
+        )
 
-    return render(request, 'feedback_personalizado.html', {
-        'feedback_items': feedback_items,
-        'user_type': user_type,
-        'username': request.session.get('username')
-    })
+    return render(
+        request,
+        "feedback_personalizado.html",
+        {
+            "feedback_items": feedback_items,
+            "user_type": user_type,
+            "username": request.session.get("username"),
+        },
+    )
+
 
 @login_required_custom
 def disciplinas(request):
-    user_type = request.session.get('user_type', '')
-    user_id = request.session.get('user_id', '')
-    
-    if user_type == 'aluno':
+    user_type = request.session.get("user_type", "")
+    user_id = request.session.get("user_id", "")
+
+    if user_type == "aluno":
         aluno = Aluno.objects.get(idAluno=user_id)
         # Fixed: Get the turmas first, then get the disciplinas from those turmas
         turmas_aluno = TurmaAluno.objects.filter(aluno=aluno)
         turmas = [ta.turma for ta in turmas_aluno]
-        disciplinas = Disciplina.objects.filter(
-            turmas__in=turmas  # Use the correct reverse relation name
-        ).distinct().order_by('nome')  # Sort disciplines alphabetically
-    
-    elif user_type == 'professor':
+        disciplinas = (
+            Disciplina.objects.filter(
+                turmas__in=turmas  # Use the correct reverse relation name
+            )
+            .distinct()
+            .order_by("nome")
+        )  # Sort disciplines alphabetically
+
+    elif user_type == "professor":
         professor = Professor.objects.get(idProfessor=user_id)
         # Fixed: Use the correct relation name
-        disciplinas = Disciplina.objects.filter(
-            turmas__professor=professor  # Use the correct reverse relation name
-        ).distinct().order_by('nome')  # Sort disciplines alphabetically
-    
-    elif user_type == 'coordenador':
+        disciplinas = (
+            Disciplina.objects.filter(
+                turmas__professor=professor  # Use the correct reverse relation name
+            )
+            .distinct()
+            .order_by("nome")
+        )  # Sort disciplines alphabetically
+
+    elif user_type == "coordenador":
         coordenador = Coordenador.objects.get(id=user_id)
         # This is correct as we're filtering by the curso field
-        disciplinas = Disciplina.objects.filter(
-            curso=coordenador.curso
-        ).distinct().order_by('nome') if coordenador.curso else Disciplina.objects.none()  # Sort disciplines alphabetically
-    
+        disciplinas = (
+            Disciplina.objects.filter(curso=coordenador.curso)
+            .distinct()
+            .order_by("nome")
+            if coordenador.curso
+            else Disciplina.objects.none()
+        )  # Sort disciplines alphabetically
+
     else:
-        disciplinas = Disciplina.objects.all().order_by('nome')  # Sort disciplines alphabetically
-    
-    return render(request, 'disciplinas.html', {
-        'disciplinas': disciplinas,
-        'user_type': user_type
-    })
+        disciplinas = Disciplina.objects.all().order_by(
+            "nome"
+        )  # Sort disciplines alphabetically
+
+    return render(
+        request,
+        "disciplinas.html",
+        {"disciplinas": disciplinas, "user_type": user_type},
+    )
+
 
 @login_required_custom
 def disciplina_detalhe(request, id_disciplina):
-    user_type = request.session.get('user_type')
-    user_id = request.session.get('user_id')
-    
+    user_type = request.session.get("user_type")
+    user_id = request.session.get("user_id")
+
     disciplina = get_object_or_404(Disciplina, id=id_disciplina)
-    
-    if user_type == 'aluno':
+
+    if user_type == "aluno":
         aluno = Aluno.objects.get(idAluno=user_id)
         # Get turmas for this student in this discipline
-        turmas_aluno = TurmaAluno.objects.filter(aluno=aluno, turma__disciplina=disciplina)
+        turmas_aluno = TurmaAluno.objects.filter(
+            aluno=aluno, turma__disciplina=disciplina
+        )
         turmas = [ta.turma for ta in turmas_aluno]
-        
-    elif user_type == 'professor':
+
+    elif user_type == "professor":
         professor = Professor.objects.get(idProfessor=user_id)
-        turmas = Turma.objects.filter(professor=professor, disciplina=disciplina).order_by('codigo')  # Sort turmas alphabetically
-        
-    elif user_type in ['coordenador', 'admin']:
-        turmas = Turma.objects.filter(disciplina=disciplina).order_by('codigo')  # Sort turmas alphabetically
-        
+        turmas = Turma.objects.filter(
+            professor=professor, disciplina=disciplina
+        ).order_by("codigo")  # Sort turmas alphabetically
+
+    elif user_type in ["coordenador", "admin"]:
+        turmas = Turma.objects.filter(disciplina=disciplina).order_by(
+            "codigo"
+        )  # Sort turmas alphabetically
+
     else:
         turmas = []
-    
-    atividades = Atividade.objects.filter(turma__in=turmas).order_by('-dataEntrega', 'titulo')  # Sort by date and then alphabetically by title
-    
-    return render(request, 'disciplina_detalhe.html', {
-        'disciplina': disciplina,
-        'turmas': turmas,
-        'atividades': atividades,
-        'user_type': user_type
-    })
+
+    atividades = Atividade.objects.filter(turma__in=turmas).order_by(
+        "-dataEntrega", "titulo"
+    )  # Sort by date and then alphabetically by title
+
+    return render(
+        request,
+        "disciplina_detalhe.html",
+        {
+            "disciplina": disciplina,
+            "turmas": turmas,
+            "atividades": atividades,
+            "user_type": user_type,
+        },
+    )
+
 
 @login_required_custom
 def perfil(request):
     # Get the user type and ID from session
-    user_type = request.session.get('user_type', '')
-    user_id = request.session.get('user_id', '')
-    
+    user_type = request.session.get("user_type", "")
+    user_id = request.session.get("user_id", "")
+
     user_data = None
-    if user_type == 'aluno':
+    if user_type == "aluno":
         user_data = Aluno.objects.get(idAluno=user_id)
-    elif user_type == 'professor':
+    elif user_type == "professor":
         user_data = Professor.objects.get(idProfessor=user_id)
-    elif user_type == 'coordenador':
+    elif user_type == "coordenador":
         user_data = Coordenador.objects.get(id=user_id)
-    
+
     # Handle form submission for password update
-    if request.method == 'POST' and 'action' in request.POST and request.POST['action'] == 'change_password':
-        current_password = request.POST.get('current_password')
-        new_password = request.POST.get('new_password')
-        confirm_password = request.POST.get('confirm_password')
-        
+    if (
+        request.method == "POST"
+        and "action" in request.POST
+        and request.POST["action"] == "change_password"
+    ):
+        current_password = request.POST.get("current_password")
+        new_password = request.POST.get("new_password")
+        confirm_password = request.POST.get("confirm_password")
+
         # Verify current password
-        if user_type == 'aluno' and not verify_password(current_password, user_data.senhaAluno):
+        if user_type == "aluno" and not verify_password(
+            current_password, user_data.senhaAluno
+        ):
             messages.error(request, "Senha atual incorreta.")
-        elif user_type == 'professor' and not verify_password(current_password, user_data.senhaProf):
+        elif user_type == "professor" and not verify_password(
+            current_password, user_data.senhaProf
+        ):
             messages.error(request, "Senha atual incorreta.")
-        elif user_type == 'coordenador' and not verify_password(current_password, user_data.senhaCoord):
+        elif user_type == "coordenador" and not verify_password(
+            current_password, user_data.senhaCoord
+        ):
             messages.error(request, "Senha atual incorreta.")
         # Verify new passwords match
         elif new_password != confirm_password:
             messages.error(request, "As novas senhas não correspondem.")
         else:
             # Update password
-            if user_type == 'aluno':
+            if user_type == "aluno":
                 user_data.senhaAluno = hash_password(new_password)
-            elif user_type == 'professor':
+            elif user_type == "professor":
                 user_data.senhaProf = hash_password(new_password)
-            elif user_type == 'coordenador':
+            elif user_type == "coordenador":
                 user_data.senhaCoord = hash_password(new_password)
             user_data.save()
             messages.success(request, "Senha atualizada com sucesso.")
-        
-    return render(request, 'perfil.html', {'user_data': user_data, 'user_type': user_type})
+
+    return render(
+        request, "perfil.html", {"user_data": user_data, "user_type": user_type}
+    )
+
 
 @login_required_custom
 def competencias(request):
     """View para listar todas as competências"""
     if not tem_permissao_competencias(request):
         messages.error(request, "Você não tem permissão para acessar esta página.")
-        return redirect('home')
-    
-    competencias = Competencia.objects.all().order_by('nome')
-    
-    return render(request, 'competencias.html', {
-        'competencias': competencias,
-        'user_type': request.session.get('user_type'),
-        'username': request.session.get('username')
-    })
+        return redirect("home")
+
+    competencias = Competencia.objects.all().order_by("nome")
+
+    return render(
+        request,
+        "competencias.html",
+        {
+            "competencias": competencias,
+            "user_type": request.session.get("user_type"),
+            "username": request.session.get("username"),
+        },
+    )
+
 
 @login_required_custom
 def criar_competencia(request):
     """View para criar uma nova competência"""
     if not tem_permissao_competencias(request):
         messages.error(request, "Você não tem permissão para criar competências.")
-        return redirect('competencias')
-    
-    if request.method == 'POST':
-        nome = request.POST.get('nome')
-        descricao = request.POST.get('descricao')
-        
+        return redirect("competencias")
+
+    if request.method == "POST":
+        nome = request.POST.get("nome")
+        descricao = request.POST.get("descricao")
+
         if not nome or not descricao:
             messages.error(request, "Todos os campos são obrigatórios.")
-            return redirect('competencias')
-        
+            return redirect("competencias")
+
         # Verificar se já existe uma competência com o mesmo nome
         if Competencia.objects.filter(nome=nome).exists():
             messages.error(request, f"Já existe uma competência com o nome '{nome}'.")
-            return redirect('competencias')
-        
-        Competencia.objects.create(
-            nome=nome,
-            descricao=descricao
-        )
-        
+            return redirect("competencias")
+
+        Competencia.objects.create(nome=nome, descricao=descricao)
+
         messages.success(request, f"Competência '{nome}' criada com sucesso!")
-        return redirect('competencias')
-    
-    return redirect('competencias')
+        return redirect("competencias")
+
+    return redirect("competencias")
+
 
 @login_required_custom
 def editar_competencia(request, competencia_id):
     """View para editar uma competência existente"""
     if not tem_permissao_competencias(request):
         messages.error(request, "Você não tem permissão para editar competências.")
-        return redirect('competencias')
-    
+        return redirect("competencias")
+
     try:
         competencia = Competencia.objects.get(id=competencia_id)
     except Competencia.DoesNotExist:
         messages.error(request, "Competência não encontrada.")
-        return redirect('competencias')
-    
-    if request.method == 'POST':
-        nome = request.POST.get('nome')
-        descricao = request.POST.get('descricao')
-        
+        return redirect("competencias")
+
+    if request.method == "POST":
+        nome = request.POST.get("nome")
+        descricao = request.POST.get("descricao")
+
         if not nome or not descricao:
             messages.error(request, "Todos os campos são obrigatórios.")
-            return redirect('competencias')
-        
+            return redirect("competencias")
+
         # Verificar se já existe outra competência com o mesmo nome
         if Competencia.objects.filter(nome=nome).exclude(id=competencia_id).exists():
             messages.error(request, f"Já existe outra competência com o nome '{nome}'.")
-            return redirect('competencias')
-        
+            return redirect("competencias")
+
         competencia.nome = nome
         competencia.descricao = descricao
         competencia.save()
-        
+
         messages.success(request, f"Competência '{nome}' atualizada com sucesso!")
-    
-    return redirect('competencias')
+
+    return redirect("competencias")
+
 
 @login_required_custom
 def excluir_competencia(request, competencia_id):
     """View para excluir uma competência"""
     if not tem_permissao_competencias(request):
         messages.error(request, "Você não tem permissão para excluir competências.")
-        return redirect('competencias')
-    
+        return redirect("competencias")
+
     try:
         competencia = Competencia.objects.get(id=competencia_id)
     except Competencia.DoesNotExist:
         messages.error(request, "Competência não encontrada.")
-        return redirect('competencias')
-    
+        return redirect("competencias")
+
     # Verificar se a competência está sendo usada em alguma atividade
     if competencia.atividades.exists():
-        messages.error(request, f"Não é possível excluir a competência '{competencia.nome}' pois está sendo utilizada em {competencia.atividades.count()} atividade(s).")
-        return redirect('competencias')
-    
+        messages.error(
+            request,
+            f"Não é possível excluir a competência '{competencia.nome}' pois está sendo utilizada em {competencia.atividades.count()} atividade(s).",
+        )
+        return redirect("competencias")
+
     nome = competencia.nome
     competencia.delete()
-    
+
     messages.success(request, f"Competência '{nome}' excluída com sucesso!")
-    return redirect('competencias')
+    return redirect("competencias")
+
 
 @login_required_custom
 def criar_atividade(request):
     """View para criar uma nova atividade"""
-    user_type = request.session.get('user_type')
-    user_id = request.session.get('user_id')
-    
-    if user_type not in ['professor', 'coordenador', 'admin']:
+    user_type = request.session.get("user_type")
+    user_id = request.session.get("user_id")
+
+    if user_type not in ["professor", "coordenador", "admin"]:
         messages.error(request, "Você não tem permissão para criar atividades.")
-        return redirect('atividades')
-    
-    if request.method == 'POST':
-        titulo = request.POST.get('titulo')
-        descricao = request.POST.get('descricao')
-        turma_id = request.POST.get('turma')
-        data_entrega = request.POST.get('data_entrega')
-        competencias_ids = request.POST.getlist('competencias')
-        
-        if not titulo or not descricao or not turma_id or not data_entrega or not competencias_ids:
+        return redirect("atividades")
+
+    if request.method == "POST":
+        titulo = request.POST.get("titulo")
+        descricao = request.POST.get("descricao")
+        turma_id = request.POST.get("turma")
+        data_entrega = request.POST.get("data_entrega")
+        competencias_ids = request.POST.getlist("competencias")
+
+        if (
+            not titulo
+            or not descricao
+            or not turma_id
+            or not data_entrega
+            or not competencias_ids
+        ):
             messages.error(request, "Todos os campos são obrigatórios.")
-            return redirect('criar_atividade')
-        
+            return redirect("criar_atividade")
+
         try:
             turma = Turma.objects.get(id=turma_id)
-            
+
             # Verificar permissão
-            if user_type == 'professor' and turma.professor.idProfessor != user_id:
-                messages.error(request, "Você não tem permissão para criar atividades para esta turma.")
-                return redirect('atividades')
-            
+            if user_type == "professor" and turma.professor.idProfessor != user_id:
+                messages.error(
+                    request,
+                    "Você não tem permissão para criar atividades para esta turma.",
+                )
+                return redirect("atividades")
+
             atividade = Atividade.objects.create(
                 titulo=titulo,
                 descricao=descricao,
                 turma=turma,
-                dataEntrega=datetime.strptime(data_entrega, '%Y-%m-%d').date()
+                dataEntrega=datetime.strptime(data_entrega, "%Y-%m-%d").date(),
             )
-            
+
             # Adicionar competências selecionadas
             competencias = Competencia.objects.filter(id__in=competencias_ids)
             atividade.competencias.set(competencias)
-            
+
             messages.success(request, f"Atividade '{titulo}' criada com sucesso!")
-            return redirect('atividade_detalhe', id_atividade=atividade.id)
-        
+            return redirect("atividade_detalhe", id_atividade=atividade.id)
+
         except (Turma.DoesNotExist, ValueError) as e:
             messages.error(request, f"Erro ao criar atividade: {str(e)}")
-            return redirect('criar_atividade')
-    
+            return redirect("criar_atividade")
+
     # Obter turmas do professor
-    if user_type == 'professor':
+    if user_type == "professor":
         professor = Professor.objects.get(idProfessor=user_id)
         turmas = Turma.objects.filter(professor=professor)
-    elif user_type == 'coordenador':
+    elif user_type == "coordenador":
         coordenador = Coordenador.objects.get(id=user_id)
         if coordenador.curso:
             disciplinas = Disciplina.objects.filter(curso=coordenador.curso)
@@ -1197,67 +1344,77 @@ def criar_atividade(request):
             turmas = []
     else:  # admin
         turmas = Turma.objects.all()
-    
+
     # Obter todas as competências
-    competencias = Competencia.objects.all().order_by('nome')
-    
-    return render(request, 'criar_atividade.html', {
-        'turmas': turmas,
-        'competencias': competencias,
-        'user_type': user_type,
-        'username': request.session.get('username')
-    })
+    competencias = Competencia.objects.all().order_by("nome")
+
+    return render(
+        request,
+        "criar_atividade.html",
+        {
+            "turmas": turmas,
+            "competencias": competencias,
+            "user_type": user_type,
+            "username": request.session.get("username"),
+        },
+    )
+
 
 @login_required_custom
 def criar_grupo(request, id_atividade):
     """View para criar um novo grupo para uma atividade"""
-    user_type = request.session.get('user_type')
-    
-    if user_type not in ['professor', 'admin']:
+    user_type = request.session.get("user_type")
+
+    if user_type not in ["professor", "admin"]:
         messages.error(request, "Apenas professores podem criar grupos.")
-        return redirect('home')
-    
+        return redirect("home")
+
     atividade = get_object_or_404(Atividade, id=id_atividade)
     turma = atividade.turma
-    
+
     # Improved query to get students enrolled in this class
-    alunos_turma = TurmaAluno.objects.filter(turma=turma).select_related('aluno')
-    
+    alunos_turma = TurmaAluno.objects.filter(turma=turma).select_related("aluno")
+
     if not alunos_turma.exists():
         messages.warning(request, "Não há alunos matriculados nesta turma.")
-    
+
     # Get IDs of students already in groups for this activity
-    alunos_em_grupos = Grupo.objects.filter(atividade=atividade).values_list('alunos', flat=True)
-    
+    alunos_em_grupos = Grupo.objects.filter(atividade=atividade).values_list(
+        "alunos", flat=True
+    )
+
     # Filter available students (those not already in groups)
-    alunos_disponiveis = [ta for ta in alunos_turma if ta.aluno.idAluno not in alunos_em_grupos]
-    
+    alunos_disponiveis = [
+        ta for ta in alunos_turma if ta.aluno.idAluno not in alunos_em_grupos
+    ]
+
     # Check if we have any available students
     if not alunos_disponiveis:
         if alunos_turma.exists():
             messages.warning(request, "Todos os alunos desta turma já estão em grupos.")
-        
+
     # Get existing groups for this activity to display
-    grupos_existentes = Grupo.objects.filter(atividade=atividade).prefetch_related('alunos')
-    
-    if request.method == 'POST':
-        nome_grupo = request.POST.get('nome_grupo')
-        alunos_ids = request.POST.getlist('alunos')
-        
+    grupos_existentes = Grupo.objects.filter(atividade=atividade).prefetch_related(
+        "alunos"
+    )
+
+    if request.method == "POST":
+        nome_grupo = request.POST.get("nome_grupo")
+        alunos_ids = request.POST.getlist("alunos")
+
         # Require a group name and at least 2 students (consistent with client-side validation)
         if not nome_grupo or not alunos_ids or len(alunos_ids) < 2:
-            messages.error(request, "O nome do grupo e pelo menos 2 alunos são obrigatórios.")
-            return redirect('criar_grupo', id_atividade=id_atividade)
-        
-        grupo = Grupo.objects.create(
-            nome=nome_grupo,
-            atividade=atividade
-        )
-        
+            messages.error(
+                request, "O nome do grupo e pelo menos 2 alunos são obrigatórios."
+            )
+            return redirect("criar_grupo", id_atividade=id_atividade)
+
+        grupo = Grupo.objects.create(nome=nome_grupo, atividade=atividade)
+
         for aluno_id in alunos_ids:
             aluno = Aluno.objects.get(idAluno=aluno_id)
             grupo.alunos.add(aluno)
-        
+
         # Create evaluation entries for each group member to evaluate others AND self-evaluation
         alunos_grupo = grupo.alunos.all()
         for avaliador in alunos_grupo:
@@ -1267,20 +1424,25 @@ def criar_grupo(request, id_atividade):
                     avaliado_aluno=avaliado,
                     atividade=atividade,
                     defaults={
-                        'concluida': False,
-                        'is_self_assessment': (avaliador == avaliado)
-                    }
+                        "concluida": False,
+                        "is_self_assessment": (avaliador == avaliado),
+                    },
                 )
-        
+
         messages.success(request, f"Grupo '{nome_grupo}' criado com sucesso!")
-        return redirect('atividade_detalhe', id_atividade=id_atividade)
-    
-    return render(request, 'criar_grupo.html', {
-        'atividade': atividade,
-        'alunos_disponiveis': alunos_disponiveis,
-        'grupos_existentes': grupos_existentes,
-        'user_type': user_type
-    })
+        return redirect("atividade_detalhe", id_atividade=id_atividade)
+
+    return render(
+        request,
+        "criar_grupo.html",
+        {
+            "atividade": atividade,
+            "alunos_disponiveis": alunos_disponiveis,
+            "grupos_existentes": grupos_existentes,
+            "user_type": user_type,
+        },
+    )
+
 
 # Admin redirection view
 @login_required_custom
@@ -1288,909 +1450,1080 @@ def admin_redirect(request):
     """
     Redirects users to the appropriate admin page based on their role
     """
-    user_type = request.session.get('user_type')
-    
+    user_type = request.session.get("user_type")
+
     if is_admin(user_type):
-        return render(request, 'admin_redirect.html')
+        return render(request, "admin_redirect.html")
     else:
-        messages.error(request, "Você não tem permissão para acessar o painel administrativo.")
-        return redirect('home')
+        messages.error(
+            request, "Você não tem permissão para acessar o painel administrativo."
+        )
+        return redirect("home")
+
 
 # Admin only views
 @login_required_custom
 def admin_dashboard(request):
     """View for the admin dashboard"""
     # Ensure user is admin
-    if request.session.get('user_type') != 'admin':
-        messages.error(request, 'Acesso negado. Você não é um administrador.')
-        return redirect('home')
-    
+    if request.session.get("user_type") != "admin":
+        messages.error(request, "Acesso negado. Você não é um administrador.")
+        return redirect("home")
+
     # Get counts for the dashboard
     cursos_count = Curso.objects.count()
     disciplinas_count = Disciplina.objects.count()
     alunos_count = Aluno.objects.count()
     professores_count = Professor.objects.count()
     coordenadores_count = Coordenador.objects.count()
-    
+
     # Get all courses and coordinators
-    cursos = Curso.objects.all().prefetch_related('disciplinas', 'alunos')
-    coordenadores = Coordenador.objects.all().select_related('curso')
-    
+    cursos = Curso.objects.all().prefetch_related("disciplinas", "alunos")
+    coordenadores = Coordenador.objects.all().select_related("curso")
+
     # Get recent activities
-    atividades_recentes = Atividade.objects.all().order_by('-id')[:10]
-    
+    atividades_recentes = Atividade.objects.all().order_by("-id")[:10]
+
     context = {
-        'cursos_count': cursos_count,
-        'disciplinas_count': disciplinas_count,
-        'alunos_count': alunos_count,
-        'professores_count': professores_count,
-        'coordenadores_count': coordenadores_count,
-        'cursos': cursos,
-        'coordenadores': coordenadores,
-        'atividades_recentes': atividades_recentes,
-        'user_type': 'admin',
-        'username': request.session.get('username')
+        "cursos_count": cursos_count,
+        "disciplinas_count": disciplinas_count,
+        "alunos_count": alunos_count,
+        "professores_count": professores_count,
+        "coordenadores_count": coordenadores_count,
+        "cursos": cursos,
+        "coordenadores": coordenadores,
+        "atividades_recentes": atividades_recentes,
+        "user_type": "admin",
+        "username": request.session.get("username"),
     }
-    
-    return render(request, 'admin/dashboard.html', context)
+
+    return render(request, "admin/dashboard.html", context)
+
 
 @login_required_custom
 def admin_import_users(request):
     """View for importing users from CSV or Excel files"""
     # Ensure user is admin
-    if request.session.get('user_type') != 'admin':
-        messages.error(request, 'Acesso negado. Você não é um administrador.')
-        return redirect('home')
-    
-    if request.method == 'POST' and request.FILES.get('file'):
-        file = request.FILES['file']
-        import_type = request.POST.get('import_type')
-        
+    if request.session.get("user_type") != "admin":
+        messages.error(request, "Acesso negado. Você não é um administrador.")
+        return redirect("home")
+
+    if request.method == "POST" and request.FILES.get("file"):
+        file = request.FILES["file"]
+        import_type = request.POST.get("import_type")
+
         try:
             # Read CSV or Excel file
-            if file.name.endswith('.csv'):
+            if file.name.endswith(".csv"):
                 import io
+
                 file_bytes = file.read()
                 try:
-                    file_str = file_bytes.decode('utf-8')
+                    file_str = file_bytes.decode("utf-8")
                 except UnicodeDecodeError:
-                    file_str = file_bytes.decode('latin1')
+                    file_str = file_bytes.decode("latin1")
                 df = pd.read_csv(io.StringIO(file_str))
-            elif file.name.endswith(('.xls', '.xlsx')):
+            elif file.name.endswith((".xls", ".xlsx")):
                 df = pd.read_excel(file)
             else:
-                messages.error(request, "Formato de arquivo não suportado. Use CSV ou Excel.")
-                return redirect('admin_import_users')
-            
+                messages.error(
+                    request, "Formato de arquivo não suportado. Use CSV ou Excel."
+                )
+                return redirect("admin_import_users")
+
             # Process based on import type
-            if import_type == 'alunos':
+            if import_type == "alunos":
                 # Expected columns: nome, email, matricula, curso_id
                 success_count = 0
                 for _, row in df.iterrows():
                     try:
                         # Validate required fields
-                        if not all(field in row and pd.notna(row[field]) for field in ['nome', 'email', 'matricula', 'curso_id']):
+                        if not all(
+                            field in row and pd.notna(row[field])
+                            for field in ["nome", "email", "matricula", "curso_id"]
+                        ):
                             continue
-                            
+
                         # Check if curso_id exists
-                        curso = Curso.objects.filter(id=row['curso_id']).first()
+                        curso = Curso.objects.filter(id=row["curso_id"]).first()
                         if not curso:
                             continue
-                            
+
                         # Check if email or matricula already exists
-                        if Aluno.objects.filter(emailAluno=row['email']).exists() or Aluno.objects.filter(matricula=row['matricula']).exists():
+                        if (
+                            Aluno.objects.filter(emailAluno=row["email"]).exists()
+                            or Aluno.objects.filter(matricula=row["matricula"]).exists()
+                        ):
                             continue
-                            
+
                         # Create student
                         Aluno.objects.create(
-                            nomeAluno=row['nome'],
-                            emailAluno=row['email'],
-                            matricula=str(row['matricula']),  # Convert to string in case it's a number
-                            senhaAluno=hash_password('123456'),  # Default password
-                            curso=curso
+                            nomeAluno=row["nome"],
+                            emailAluno=row["email"],
+                            matricula=str(
+                                row["matricula"]
+                            ),  # Convert to string in case it's a number
+                            senhaAluno=hash_password("123456"),  # Default password
+                            curso=curso,
                         )
                         success_count += 1
                     except Exception as e:
                         # Skip problematic rows
                         print(f"Error importing student: {str(e)}")
                         continue
-                        
-                messages.success(request, f"{success_count} alunos importados com sucesso.")
-                
-            elif import_type == 'professores':
+
+                messages.success(
+                    request, f"{success_count} alunos importados com sucesso."
+                )
+
+            elif import_type == "professores":
                 # Expected columns: nome, email
                 success_count = 0
                 for _, row in df.iterrows():
                     try:
                         # Validate required fields
-                        if not all(field in row and pd.notna(row[field]) for field in ['nome', 'email']):
+                        if not all(
+                            field in row and pd.notna(row[field])
+                            for field in ["nome", "email"]
+                        ):
                             continue
-                            
+
                         # Check if email already exists
-                        if Professor.objects.filter(emailProf=row['email']).exists():
+                        if Professor.objects.filter(emailProf=row["email"]).exists():
                             continue
-                            
+
                         # Create professor
                         Professor.objects.create(
-                            nomeProf=row['nome'],
-                            emailProf=row['email'],
-                            senhaProf=hash_password('123456')  # Default password
+                            nomeProf=row["nome"],
+                            emailProf=row["email"],
+                            senhaProf=hash_password("123456"),  # Default password
                         )
                         success_count += 1
                     except Exception as e:
                         # Skip problematic rows
                         print(f"Error importing professor: {str(e)}")
                         continue
-                        
-                messages.success(request, f"{success_count} professores importados com sucesso.")
-                
-            elif import_type == 'coordenadores':
+
+                messages.success(
+                    request, f"{success_count} professores importados com sucesso."
+                )
+
+            elif import_type == "coordenadores":
                 # Expected columns: nome, email, curso_id
                 success_count = 0
                 for _, row in df.iterrows():
                     try:
                         # Validate required fields
-                        if not all(field in row and pd.notna(row[field]) for field in ['nome', 'email', 'curso_id']):
+                        if not all(
+                            field in row and pd.notna(row[field])
+                            for field in ["nome", "email", "curso_id"]
+                        ):
                             continue
-                            
+
                         # Check if curso_id exists
-                        curso = Curso.objects.filter(id=row['curso_id']).first()
+                        curso = Curso.objects.filter(id=row["curso_id"]).first()
                         if not curso:
                             continue
-                            
+
                         # Check if email already exists
-                        if Coordenador.objects.filter(emailCoord=row['email']).exists():
+                        if Coordenador.objects.filter(emailCoord=row["email"]).exists():
                             continue
-                            
+
                         # Create coordinator
                         Coordenador.objects.create(
-                            nomeCoord=row['nome'],
-                            emailCoord=row['email'],
-                            senhaCoord=hash_password('123456'),  # Default password
-                            curso=curso
+                            nomeCoord=row["nome"],
+                            emailCoord=row["email"],
+                            senhaCoord=hash_password("123456"),  # Default password
+                            curso=curso,
                         )
                         success_count += 1
                     except Exception as e:
                         # Skip problematic rows
                         print(f"Error importing coordinator: {str(e)}")
                         continue
-                        
-                messages.success(request, f"{success_count} coordenadores importados com sucesso.")
-                
+
+                messages.success(
+                    request, f"{success_count} coordenadores importados com sucesso."
+                )
+
             else:
                 messages.error(request, "Tipo de importação inválido.")
-                
+
         except Exception as e:
             messages.error(request, f"Erro ao processar arquivo: {str(e)}")
-    
+
     # Get all courses for the form
-    cursos = Curso.objects.all().order_by('nome')
-    
+    cursos = Curso.objects.all().order_by("nome")
+
     context = {
-        'cursos': cursos,
-        'user_type': 'admin',
-        'username': request.session.get('username')
+        "cursos": cursos,
+        "user_type": "admin",
+        "username": request.session.get("username"),
     }
-    
-    return render(request, 'admin/import_users.html', context)
+
+    return render(request, "admin/import_users.html", context)
+
 
 @login_required_custom
 def admin_users(request):
     """View for managing users in the admin dashboard"""
     # Ensure user is admin
-    if request.session.get('user_type') != 'admin':
-        messages.error(request, 'Acesso negado. Você não é um administrador.')
-        return redirect('home')
-    
+    if request.session.get("user_type") != "admin":
+        messages.error(request, "Acesso negado. Você não é um administrador.")
+        return redirect("home")
+
     # Get all users of each type
     from .models import Admin
-    alunos = Aluno.objects.all().select_related('curso').order_by('nomeAluno')
-    professores = Professor.objects.all().order_by('nomeProf')
-    coordenadores = Coordenador.objects.all().select_related('curso').order_by('nomeCoord')
-    admins = Admin.objects.all().order_by('nomeAdmin')
-    
+
+    alunos = Aluno.objects.all().select_related("curso").order_by("nomeAluno")
+    professores = Professor.objects.all().order_by("nomeProf")
+    coordenadores = (
+        Coordenador.objects.all().select_related("curso").order_by("nomeCoord")
+    )
+    admins = Admin.objects.all().order_by("nomeAdmin")
+
     context = {
-        'alunos': alunos,
-        'professores': professores,
-        'coordenadores': coordenadores,
-        'admins': admins,
-        'user_type': 'admin',
-        'username': request.session.get('username')
+        "alunos": alunos,
+        "professores": professores,
+        "coordenadores": coordenadores,
+        "admins": admins,
+        "user_type": "admin",
+        "username": request.session.get("username"),
     }
-    
-    return render(request, 'admin/users.html', context)
+
+    return render(request, "admin/users.html", context)
+
 
 @login_required_custom
 def admin_create_user(request):
     """View for creating new users in the admin dashboard"""
     # Ensure user is admin
-    if request.session.get('user_type') != 'admin':
-        messages.error(request, 'Acesso negado. Você não é um administrador.')
-        return redirect('home')
-    
+    if request.session.get("user_type") != "admin":
+        messages.error(request, "Acesso negado. Você não é um administrador.")
+        return redirect("home")
+
     from .models import Admin
-    
+
     # Handle form submission
-    if request.method == 'POST':
-        user_role = request.POST.get('user_role')
-        nome = request.POST.get('nome')
-        email = request.POST.get('email')
-        senha = request.POST.get('senha')
-        
+    if request.method == "POST":
+        user_role = request.POST.get("user_role")
+        nome = request.POST.get("nome")
+        email = request.POST.get("email")
+        senha = request.POST.get("senha")
+
         # Use default password if none provided
         if not senha:
-            senha = '123456'
-        
+            senha = "123456"
+
         # Hash the password
         senha_hash = hash_password(senha)
-        
+
         try:
             # Create user based on role
-            if user_role == 'aluno':
-                matricula = request.POST.get('matricula')
-                curso_id = request.POST.get('curso')
-                
+            if user_role == "aluno":
+                matricula = request.POST.get("matricula")
+                curso_id = request.POST.get("curso")
+
                 # Validate required fields
                 if not matricula or not curso_id:
-                    messages.error(request, "Matrícula e curso são obrigatórios para alunos.")
-                    return redirect('admin_create_user')
-                
+                    messages.error(
+                        request, "Matrícula e curso são obrigatórios para alunos."
+                    )
+                    return redirect("admin_create_user")
+
                 # Check if curso exists
                 curso = get_object_or_404(Curso, id=curso_id)
-                
+
                 # Check if email or matricula already exists
                 if Aluno.objects.filter(emailAluno=email).exists():
-                    messages.error(request, f"Já existe um aluno com o email '{email}'.")
-                    return redirect('admin_create_user')
-                
+                    messages.error(
+                        request, f"Já existe um aluno com o email '{email}'."
+                    )
+                    return redirect("admin_create_user")
+
                 if Aluno.objects.filter(matricula=matricula).exists():
-                    messages.error(request, f"Já existe um aluno com a matrícula '{matricula}'.")
-                    return redirect('admin_create_user')
-                
+                    messages.error(
+                        request, f"Já existe um aluno com a matrícula '{matricula}'."
+                    )
+                    return redirect("admin_create_user")
+
                 # Create aluno
                 aluno = Aluno.objects.create(
                     nomeAluno=nome,
                     emailAluno=email,
                     senhaAluno=senha_hash,
                     matricula=matricula,
-                    curso=curso
+                    curso=curso,
                 )
                 messages.success(request, f"Aluno '{nome}' criado com sucesso!")
-                
-            elif user_role == 'professor':
+
+            elif user_role == "professor":
                 # Check if email already exists
                 if Professor.objects.filter(emailProf=email).exists():
-                    messages.error(request, f"Já existe um professor com o email '{email}'.")
-                    return redirect('admin_create_user')
-                
+                    messages.error(
+                        request, f"Já existe um professor com o email '{email}'."
+                    )
+                    return redirect("admin_create_user")
+
                 # Create professor
                 professor = Professor.objects.create(
-                    nomeProf=nome,
-                    emailProf=email,
-                    senhaProf=senha_hash
+                    nomeProf=nome, emailProf=email, senhaProf=senha_hash
                 )
                 messages.success(request, f"Professor '{nome}' criado com sucesso!")
-                
-            elif user_role == 'coordenador':
-                curso_id = request.POST.get('curso')
-                
+
+            elif user_role == "coordenador":
+                curso_id = request.POST.get("curso")
+
                 # Validate required fields
                 if not curso_id:
                     messages.error(request, "Curso é obrigatório para coordenadores.")
-                    return redirect('admin_create_user')
-                
+                    return redirect("admin_create_user")
+
                 # Check if curso exists
                 curso = get_object_or_404(Curso, id=curso_id)
-                
+
                 # Check if email already exists
                 if Coordenador.objects.filter(emailCoord=email).exists():
-                    messages.error(request, f"Já existe um coordenador com o email '{email}'.")
-                    return redirect('admin_create_user')
-                
+                    messages.error(
+                        request, f"Já existe um coordenador com o email '{email}'."
+                    )
+                    return redirect("admin_create_user")
+
                 # Create coordenador
                 coordenador = Coordenador.objects.create(
-                    nomeCoord=nome,
-                    emailCoord=email,
-                    senhaCoord=senha_hash,
-                    curso=curso
+                    nomeCoord=nome, emailCoord=email, senhaCoord=senha_hash, curso=curso
                 )
                 messages.success(request, f"Coordenador '{nome}' criado com sucesso!")
-                
-            elif user_role == 'admin':
+
+            elif user_role == "admin":
                 # Check if email already exists
                 if Admin.objects.filter(emailAdmin=email).exists():
-                    messages.error(request, f"Já existe um administrador com o email '{email}'.")
-                    return redirect('admin_create_user')
-                
+                    messages.error(
+                        request, f"Já existe um administrador com o email '{email}'."
+                    )
+                    return redirect("admin_create_user")
+
                 # Create admin
                 admin = Admin.objects.create(
-                    nomeAdmin=nome,
-                    emailAdmin=email,
-                    senhaAdmin=senha_hash
+                    nomeAdmin=nome, emailAdmin=email, senhaAdmin=senha_hash
                 )
                 messages.success(request, f"Administrador '{nome}' criado com sucesso!")
-                
+
             else:
                 messages.error(request, "Tipo de usuário inválido.")
-                return redirect('admin_create_user')
-                
+                return redirect("admin_create_user")
+
             # Redirect to users list
-            return redirect('admin_users')
-            
+            return redirect("admin_users")
+
         except Exception as e:
             messages.error(request, f"Erro ao criar usuário: {str(e)}")
-    
+
     # GET request - render form
-    cursos = Curso.objects.all().order_by('nome')
-    
-    return render(request, 'admin/create_user.html', {
-        'cursos': cursos,
-        'user_type': 'admin',
-        'username': request.session.get('username')
-    })
+    cursos = Curso.objects.all().order_by("nome")
+
+    return render(
+        request,
+        "admin/create_user.html",
+        {
+            "cursos": cursos,
+            "user_type": "admin",
+            "username": request.session.get("username"),
+        },
+    )
+
 
 @login_required_custom
 def admin_edit_user(request, role, user_id):
     """View for editing users in the admin dashboard"""
     # Ensure user is admin
-    if request.session.get('user_type') != 'admin':
-        messages.error(request, 'Acesso negado. Você não é um administrador.')
-        return redirect('home')
-    
+    if request.session.get("user_type") != "admin":
+        messages.error(request, "Acesso negado. Você não é um administrador.")
+        return redirect("home")
+
     from .models import Admin
+
     user = None
-    
+
     # Get the user object based on role and ID
     try:
-        if role == 'aluno':
+        if role == "aluno":
             user = Aluno.objects.get(idAluno=user_id)
-        elif role == 'professor':
+        elif role == "professor":
             user = Professor.objects.get(idProfessor=user_id)
-        elif role == 'coordenador':
+        elif role == "coordenador":
             user = Coordenador.objects.get(id=user_id)
-        elif role == 'admin':
+        elif role == "admin":
             user = Admin.objects.get(id=user_id)
         else:
             messages.error(request, f"Tipo de usuário inválido: {role}")
-            return redirect('admin_users')
+            return redirect("admin_users")
     except Exception as e:
         messages.error(request, f"Usuário não encontrado: {str(e)}")
-        return redirect('admin_users')
-    
+        return redirect("admin_users")
+
     # Handle form submission
-    if request.method == 'POST':
-        nome = request.POST.get('nome')
-        email = request.POST.get('email')
-        senha = request.POST.get('senha')
-        
+    if request.method == "POST":
+        nome = request.POST.get("nome")
+        email = request.POST.get("email")
+        senha = request.POST.get("senha")
+
         try:
             # Update user based on role
-            if role == 'aluno':
-                matricula = request.POST.get('matricula')
-                curso_id = request.POST.get('curso')
-                
+            if role == "aluno":
+                matricula = request.POST.get("matricula")
+                curso_id = request.POST.get("curso")
+
                 # Validate required fields
                 if not nome or not email or not matricula or not curso_id:
                     messages.error(request, "Todos os campos são obrigatórios.")
-                    return redirect('admin_edit_user', role=role, user_id=user_id)
-                
+                    return redirect("admin_edit_user", role=role, user_id=user_id)
+
                 # Check if curso exists
                 curso = get_object_or_404(Curso, id=curso_id)
-                
+
                 # Check if email already exists with another user
-                if Aluno.objects.filter(emailAluno=email).exclude(idAluno=user_id).exists():
-                    messages.error(request, f"Já existe outro aluno com o email '{email}'.")
-                    return redirect('admin_edit_user', role=role, user_id=user_id)
-                
+                if (
+                    Aluno.objects.filter(emailAluno=email)
+                    .exclude(idAluno=user_id)
+                    .exists()
+                ):
+                    messages.error(
+                        request, f"Já existe outro aluno com o email '{email}'."
+                    )
+                    return redirect("admin_edit_user", role=role, user_id=user_id)
+
                 # Check if matricula already exists with another user
-                if Aluno.objects.filter(matricula=matricula).exclude(idAluno=user_id).exists():
-                    messages.error(request, f"Já existe outro aluno com a matrícula '{matricula}'.")
-                    return redirect('admin_edit_user', role=role, user_id=user_id)
-                
+                if (
+                    Aluno.objects.filter(matricula=matricula)
+                    .exclude(idAluno=user_id)
+                    .exists()
+                ):
+                    messages.error(
+                        request, f"Já existe outro aluno com a matrícula '{matricula}'."
+                    )
+                    return redirect("admin_edit_user", role=role, user_id=user_id)
+
                 # Update user data
                 user.nomeAluno = nome
                 user.emailAluno = email
                 user.matricula = matricula
                 user.curso = curso
-                
+
                 # Update password if provided
                 if senha:
                     user.senhaAluno = hash_password(senha)
-                
+
                 user.save()
-                
-            elif role == 'professor':
+
+            elif role == "professor":
                 # Validate required fields
                 if not nome or not email:
                     messages.error(request, "Nome e email são obrigatórios.")
-                    return redirect('admin_edit_user', role=role, user_id=user_id)
-                
+                    return redirect("admin_edit_user", role=role, user_id=user_id)
+
                 # Check if email already exists with another user
-                if Professor.objects.filter(emailProf=email).exclude(idProfessor=user_id).exists():
-                    messages.error(request, f"Já existe outro professor com o email '{email}'.")
-                    return redirect('admin_edit_user', role=role, user_id=user_id)
-                
+                if (
+                    Professor.objects.filter(emailProf=email)
+                    .exclude(idProfessor=user_id)
+                    .exists()
+                ):
+                    messages.error(
+                        request, f"Já existe outro professor com o email '{email}'."
+                    )
+                    return redirect("admin_edit_user", role=role, user_id=user_id)
+
                 # Update user data
                 user.nomeProf = nome
                 user.emailProf = email
-                
+
                 # Update password if provided
                 if senha:
                     user.senhaProf = hash_password(senha)
-                
+
                 user.save()
-                
-            elif role == 'coordenador':
-                curso_id = request.POST.get('curso')
-                
+
+            elif role == "coordenador":
+                curso_id = request.POST.get("curso")
+
                 # Validate required fields
                 if not nome or not email or not curso_id:
                     messages.error(request, "Nome, email e curso são obrigatórios.")
-                    return redirect('admin_edit_user', role=role, user_id=user_id)
-                
+                    return redirect("admin_edit_user", role=role, user_id=user_id)
+
                 # Check if curso exists
                 curso = get_object_or_404(Curso, id=curso_id)
-                
+
                 # Check if email already exists with another user
-                if Coordenador.objects.filter(emailCoord=email).exclude(id=user_id).exists():
-                    messages.error(request, f"Já existe outro coordenador com o email '{email}'.")
-                    return redirect('admin_edit_user', role=role, user_id=user_id)
-                
+                if (
+                    Coordenador.objects.filter(emailCoord=email)
+                    .exclude(id=user_id)
+                    .exists()
+                ):
+                    messages.error(
+                        request, f"Já existe outro coordenador com o email '{email}'."
+                    )
+                    return redirect("admin_edit_user", role=role, user_id=user_id)
+
                 # Update user data
                 user.nomeCoord = nome
                 user.emailCoord = email
                 user.curso = curso
-                
+
                 # Update password if provided
                 if senha:
                     user.senhaCoord = hash_password(senha)
-                
+
                 user.save()
-                
-            elif role == 'admin':
+
+            elif role == "admin":
                 # Validate required fields
                 if not nome or not email:
                     messages.error(request, "Nome e email são obrigatórios.")
-                    return redirect('admin_edit_user', role=role, user_id=user_id)
-                
+                    return redirect("admin_edit_user", role=role, user_id=user_id)
+
                 # Check if email already exists with another user
                 if Admin.objects.filter(emailAdmin=email).exclude(id=user_id).exists():
-                    messages.error(request, f"Já existe outro administrador com o email '{email}'.")
-                    return redirect('admin_edit_user', role=role, user_id=user_id)
-                
+                    messages.error(
+                        request, f"Já existe outro administrador com o email '{email}'."
+                    )
+                    return redirect("admin_edit_user", role=role, user_id=user_id)
+
                 # Update user data
                 user.nomeAdmin = nome
                 user.emailAdmin = email
-                
+
                 # Update password if provided
                 if senha:
                     user.senhaAdmin = hash_password(senha)
-                
+
                 user.save()
-            
+
             messages.success(request, "Usuário atualizado com sucesso!")
-            return redirect('admin_users')
-            
+            return redirect("admin_users")
+
         except Exception as e:
             messages.error(request, f"Erro ao atualizar usuário: {str(e)}")
-    
+
     # Prepare context for template rendering
     context = {
-        'user': user,
-        'role': role,
-        'user_type': 'admin',
-        'username': request.session.get('username')
+        "user": user,
+        "role": role,
+        "user_type": "admin",
+        "username": request.session.get("username"),
     }
-    
+
     # Add courses for alunos and coordenadores
-    if role in ['aluno', 'coordenador']:
-        context['cursos'] = Curso.objects.all().order_by('nome')
-    
-    return render(request, 'admin/edit_user.html', context)
+    if role in ["aluno", "coordenador"]:
+        context["cursos"] = Curso.objects.all().order_by("nome")
+
+    return render(request, "admin/edit_user.html", context)
+
 
 @login_required_custom
 def admin_delete_user(request, role, user_id):
     """View for deleting users in the admin dashboard"""
     # Ensure user is admin
-    if request.session.get('user_type') != 'admin':
-        messages.error(request, 'Acesso negado. Você não é um administrador.')
-        return redirect('home')
-    
+    # Log request context to help debug unexpected redirects
+    logging.info(
+        f"admin_delete_user called: method={request.method} path={request.path}"
+    )
+    logging.info(
+        f"session user_type={request.session.get('user_type')} user_id={request.session.get('user_id')}"
+    )
+
+    if request.session.get("user_type") != "admin":
+        messages.error(request, "Acesso negado. Você não é um administrador.")
+        logging.warning("admin_delete_user: blocked due to non-admin session")
+        return redirect("home")
+
     from .models import Admin
-    
+
     try:
         # Get user based on role
-        if role == 'aluno':
+        if role == "aluno":
             user = get_object_or_404(Aluno, idAluno=user_id)
             # Check if user can be deleted (check dependencies)
-            if Avaliacao.objects.filter(avaliador_aluno=user).exists() or Avaliacao.objects.filter(avaliado_aluno=user).exists():
-                messages.error(request, f"Não é possível excluir o aluno '{user.nomeAluno}' pois existem avaliações associadas a ele.")
-                return redirect('admin_users')
-            
+            if (
+                Avaliacao.objects.filter(avaliador_aluno=user).exists()
+                or Avaliacao.objects.filter(avaliado_aluno=user).exists()
+            ):
+                messages.error(
+                    request,
+                    f"Não é possível excluir o aluno '{user.nomeAluno}' pois existem avaliações associadas a ele.",
+                )
+                return redirect("admin_users")
+
             nome = user.nomeAluno
             user.delete()
             messages.success(request, f"Aluno '{nome}' excluído com sucesso!")
-            
-        elif role == 'professor':
+
+        elif role == "professor":
             user = get_object_or_404(Professor, idProfessor=user_id)
             # Check if professor has turmas
-            if Turma.objects.filter(professor=user).exists():
-                messages.error(request, f"Não é possível excluir o professor '{user.nomeProf}' pois existem turmas associadas a ele.")
-                return redirect('admin_users')
-            
+            turmas_qs = Turma.objects.filter(professor=user)
+            if turmas_qs.exists():
+                turmas_count = turmas_qs.count()
+                # collect a small sample of turma identifiers to help debugging
+                turmas_sample = ", ".join(
+                    [f"{t.id}({t.codigo})" for t in turmas_qs[:5]]
+                )
+                messages.error(
+                    request,
+                    (
+                        f"Não é possível excluir o professor '{user.nomeProf}' pois existem {turmas_count} "
+                        f"turma(s) associada(s) a ele. Exemplos: {turmas_sample}. "
+                        "Reatribua ou exclua essas turmas antes de remover o professor."
+                    ),
+                )
+                return redirect("admin_users")
+
             nome = user.nomeProf
             user.delete()
             messages.success(request, f"Professor '{nome}' excluído com sucesso!")
-            
-        elif role == 'coordenador':
+
+        elif role == "coordenador":
             user = get_object_or_404(Coordenador, id=user_id)
             nome = user.nomeCoord
             user.delete()
             messages.success(request, f"Coordenador '{nome}' excluído com sucesso!")
-            
-        elif role == 'admin':
+
+        elif role == "admin":
             # Prevent deleting the last admin
             if Admin.objects.count() <= 1:
-                messages.error(request, "Não é possível excluir o último administrador do sistema.")
-                return redirect('admin_users')
-            
+                messages.error(
+                    request, "Não é possível excluir o último administrador do sistema."
+                )
+                return redirect("admin_users")
+
             user = get_object_or_404(Admin, id=user_id)
             nome = user.nomeAdmin
             user.delete()
             messages.success(request, f"Administrador '{nome}' excluído com sucesso!")
-            
+
         else:
             messages.error(request, f"Tipo de usuário inválido: {role}")
-            
+
     except Exception as e:
         messages.error(request, f"Erro ao excluir usuário: {str(e)}")
-    
-    return redirect('admin_users')
+
+    return redirect("admin_users")
+
 
 @login_required_custom
 def admin_courses(request):
     """View for managing courses in the admin dashboard"""
     # Ensure user is admin
-    if request.session.get('user_type') != 'admin':
-        messages.error(request, 'Acesso negado. Você não é um administrador.')
-        return redirect('home')
-    
+    if request.session.get("user_type") != "admin":
+        messages.error(request, "Acesso negado. Você não é um administrador.")
+        return redirect("home")
+
     # Handle form actions
-    if request.method == 'POST':
-        action = request.POST.get('action')
-        
+    if request.method == "POST":
+        action = request.POST.get("action")
+
         # Create new course
-        if action == 'create':
-            nome_curso = request.POST.get('nome_curso')
+        if action == "create":
+            nome_curso = request.POST.get("nome_curso")
             if nome_curso:
                 if Curso.objects.filter(nome=nome_curso).exists():
-                    messages.error(request, f"Já existe um curso com o nome '{nome_curso}'.")
+                    messages.error(
+                        request, f"Já existe um curso com o nome '{nome_curso}'."
+                    )
                 else:
                     Curso.objects.create(nome=nome_curso)
-                    messages.success(request, f"Curso '{nome_curso}' criado com sucesso!")
+                    messages.success(
+                        request, f"Curso '{nome_curso}' criado com sucesso!"
+                    )
             else:
                 messages.error(request, "O nome do curso é obrigatório.")
-        
+
         # Update existing course
-        elif action == 'update':
-            curso_id = request.POST.get('curso_id')
-            nome_curso = request.POST.get('nome_curso')
-            
+        elif action == "update":
+            curso_id = request.POST.get("curso_id")
+            nome_curso = request.POST.get("nome_curso")
+
             if curso_id and nome_curso:
                 curso = get_object_or_404(Curso, id=curso_id)
                 if Curso.objects.filter(nome=nome_curso).exclude(id=curso_id).exists():
-                    messages.error(request, f"Já existe outro curso com o nome '{nome_curso}'.")
+                    messages.error(
+                        request, f"Já existe outro curso com o nome '{nome_curso}'."
+                    )
                 else:
                     curso.nome = nome_curso
                     curso.save()
                     messages.success(request, f"Curso atualizado para '{nome_curso}'.")
             else:
                 messages.error(request, "ID e nome do curso são obrigatórios.")
-        
+
         # Delete course
-        elif action == 'delete':
-            curso_id = request.POST.get('curso_id')
+        elif action == "delete":
+            curso_id = request.POST.get("curso_id")
             if curso_id:
                 curso = get_object_or_404(Curso, id=curso_id)
-                
+
                 # Check if course can be deleted (no associated students or disciplines)
                 if curso.alunos.exists():
-                    messages.error(request, f"Não é possível excluir o curso '{curso.nome}' pois existem alunos matriculados.")
+                    messages.error(
+                        request,
+                        f"Não é possível excluir o curso '{curso.nome}' pois existem alunos matriculados.",
+                    )
                 elif curso.disciplinas.exists():
-                    messages.error(request, f"Não é possível excluir o curso '{curso.nome}' pois existem disciplinas associadas.")
+                    messages.error(
+                        request,
+                        f"Não é possível excluir o curso '{curso.nome}' pois existem disciplinas associadas.",
+                    )
                 elif Coordenador.objects.filter(curso=curso).exists():
-                    messages.error(request, f"Não é possível excluir o curso '{curso.nome}' pois existem coordenadores associados.")
+                    messages.error(
+                        request,
+                        f"Não é possível excluir o curso '{curso.nome}' pois existem coordenadores associados.",
+                    )
                 else:
                     nome = curso.nome
                     curso.delete()
                     messages.success(request, f"Curso '{nome}' excluído com sucesso!")
             else:
                 messages.error(request, "ID do curso é obrigatório.")
-    
+
     # Get all courses
-    cursos = Curso.objects.all().prefetch_related('alunos', 'disciplinas', 'coordenadores').order_by('nome')
-    
+    cursos = (
+        Curso.objects.all()
+        .prefetch_related("alunos", "disciplinas", "coordenadores")
+        .order_by("nome")
+    )
+
     context = {
-        'cursos': cursos,
-        'user_type': 'admin',
-        'username': request.session.get('username')
+        "cursos": cursos,
+        "user_type": "admin",
+        "username": request.session.get("username"),
     }
-    
-    return render(request, 'admin/courses.html', context)
+
+    return render(request, "admin/courses.html", context)
+
 
 @login_required_custom
 def admin_disciplines(request):
     """View for managing disciplines in the admin dashboard"""
     # Ensure user is admin
-    if request.session.get('user_type') != 'admin':
-        messages.error(request, 'Acesso negado. Você não é um administrador.')
-        return redirect('home')
-    
+    if request.session.get("user_type") != "admin":
+        messages.error(request, "Acesso negado. Você não é um administrador.")
+        return redirect("home")
+
     # Handle form actions
-    if request.method == 'POST':
-        action = request.POST.get('action')
-        
+    if request.method == "POST":
+        action = request.POST.get("action")
+
         # Create new discipline
-        if action == 'create':
-            nome = request.POST.get('nome')
-            codigo = request.POST.get('codigo')
-            curso_id = request.POST.get('curso')
-            
+        if action == "create":
+            nome = request.POST.get("nome")
+            codigo = request.POST.get("codigo")
+            curso_id = request.POST.get("curso")
+
             if nome and codigo and curso_id:
                 # Check if code already exists
                 if Disciplina.objects.filter(codigo=codigo).exists():
-                    messages.error(request, f"Já existe uma disciplina com o código '{codigo}'.")
-                    return redirect('admin_disciplines')
-                
+                    messages.error(
+                        request, f"Já existe uma disciplina com o código '{codigo}'."
+                    )
+                    return redirect("admin_disciplines")
+
                 # Check if curso exists
                 curso = get_object_or_404(Curso, id=curso_id)
-                
+
                 # Create the discipline
-                Disciplina.objects.create(
-                    nome=nome,
-                    codigo=codigo,
-                    curso=curso
-                )
+                Disciplina.objects.create(nome=nome, codigo=codigo, curso=curso)
                 messages.success(request, f"Disciplina '{nome}' criada com sucesso!")
             else:
                 messages.error(request, "Todos os campos são obrigatórios.")
-        
+
         # Update existing discipline
-        elif action == 'update':
-            disciplina_id = request.POST.get('disciplina_id')
-            nome = request.POST.get('nome')
-            codigo = request.POST.get('codigo')
-            curso_id = request.POST.get('curso')
-            
+        elif action == "update":
+            disciplina_id = request.POST.get("disciplina_id")
+            nome = request.POST.get("nome")
+            codigo = request.POST.get("codigo")
+            curso_id = request.POST.get("curso")
+
             if disciplina_id and nome and codigo and curso_id:
                 disciplina = get_object_or_404(Disciplina, id=disciplina_id)
-                
+
                 # Check if code already exists with another discipline
-                if Disciplina.objects.filter(codigo=codigo).exclude(id=disciplina_id).exists():
-                    messages.error(request, f"Já existe outra disciplina com o código '{codigo}'.")
-                    return redirect('admin_disciplines')
-                
+                if (
+                    Disciplina.objects.filter(codigo=codigo)
+                    .exclude(id=disciplina_id)
+                    .exists()
+                ):
+                    messages.error(
+                        request, f"Já existe outra disciplina com o código '{codigo}'."
+                    )
+                    return redirect("admin_disciplines")
+
                 # Check if curso exists
                 curso = get_object_or_404(Curso, id=curso_id)
-                
+
                 # Update the discipline
                 disciplina.nome = nome
                 disciplina.codigo = codigo
                 disciplina.curso = curso
                 disciplina.save()
-                
-                messages.success(request, f"Disciplina '{nome}' atualizada com sucesso!")
+
+                messages.success(
+                    request, f"Disciplina '{nome}' atualizada com sucesso!"
+                )
             else:
                 messages.error(request, "Todos os campos são obrigatórios.")
-        
+
         # Delete discipline
-        elif action == 'delete':
-            disciplina_id = request.POST.get('disciplina_id')
-            
+        elif action == "delete":
+            disciplina_id = request.POST.get("disciplina_id")
+
             if disciplina_id:
                 disciplina = get_object_or_404(Disciplina, id=disciplina_id)
-                
+
                 # Check if discipline has turmas
                 if disciplina.turmas.exists():
-                    messages.error(request, f"Não é possível excluir a disciplina '{disciplina.nome}' pois existem turmas associadas.")
-                    return redirect('admin_disciplines')
-                
+                    messages.error(
+                        request,
+                        f"Não é possível excluir a disciplina '{disciplina.nome}' pois existem turmas associadas.",
+                    )
+                    return redirect("admin_disciplines")
+
                 nome = disciplina.nome
                 disciplina.delete()
                 messages.success(request, f"Disciplina '{nome}' excluída com sucesso!")
             else:
                 messages.error(request, "ID da disciplina é obrigatório.")
-    
+
     # Get all disciplines and courses
-    disciplinas = Disciplina.objects.all().select_related('curso').order_by('curso__nome', 'nome')
-    cursos = Curso.objects.all().order_by('nome')
-    
+    disciplinas = (
+        Disciplina.objects.all().select_related("curso").order_by("curso__nome", "nome")
+    )
+    cursos = Curso.objects.all().order_by("nome")
+
     context = {
-        'disciplinas': disciplinas,
-        'cursos': cursos,
-        'user_type': 'admin',
-        'username': request.session.get('username')
+        "disciplinas": disciplinas,
+        "cursos": cursos,
+        "user_type": "admin",
+        "username": request.session.get("username"),
     }
-    
-    return render(request, 'admin/disciplines.html', context)
+
+    return render(request, "admin/disciplines.html", context)
+
 
 @login_required_custom
 def admin_classes(request):
     """View for managing classes (turmas) in the admin dashboard"""
     # Ensure user is admin
-    if request.session.get('user_type') != 'admin':
-        messages.error(request, 'Acesso negado. Você não é um administrador.')
-        return redirect('home')
-    
+    if request.session.get("user_type") != "admin":
+        messages.error(request, "Acesso negado. Você não é um administrador.")
+        return redirect("home")
+
     # Handle form actions
-    if request.method == 'POST':
-        action = request.POST.get('action')
-        
+    if request.method == "POST":
+        action = request.POST.get("action")
+
         # Create new class
-        if action == 'create':
-            codigo = request.POST.get('codigo')
-            disciplina_id = request.POST.get('disciplina')
-            professor_id = request.POST.get('professor')
-            semestre_id = request.POST.get('semestre')
-            
+        if action == "create":
+            codigo = request.POST.get("codigo")
+            disciplina_id = request.POST.get("disciplina")
+            professor_id = request.POST.get("professor")
+            semestre_id = request.POST.get("semestre")
+
             if not all([codigo, disciplina_id, professor_id, semestre_id]):
                 messages.error(request, "Todos os campos são obrigatórios.")
-                return redirect('admin_classes')
-            
+                return redirect("admin_classes")
+
             try:
                 # Get related objects
                 disciplina = get_object_or_404(Disciplina, id=disciplina_id)
                 professor = get_object_or_404(Professor, idProfessor=professor_id)
                 semestre = get_object_or_404(Semestre, id=semestre_id)
-                
+
                 # Check if a class with the same code, discipline and semester already exists
-                if Turma.objects.filter(codigo=codigo, disciplina=disciplina, semestre=semestre).exists():
-                    messages.error(request, f"Já existe uma turma com código '{codigo}' para esta disciplina neste semestre.")
-                    return redirect('admin_classes')
-                
+                if Turma.objects.filter(
+                    codigo=codigo, disciplina=disciplina, semestre=semestre
+                ).exists():
+                    messages.error(
+                        request,
+                        f"Já existe uma turma com código '{codigo}' para esta disciplina neste semestre.",
+                    )
+                    return redirect("admin_classes")
+
                 # Create the class
                 Turma.objects.create(
                     codigo=codigo,
                     disciplina=disciplina,
                     professor=professor,
-                    semestre=semestre
+                    semestre=semestre,
                 )
-                
-                messages.success(request, f"Turma '{codigo}' da disciplina '{disciplina.nome}' criada com sucesso!")
+
+                messages.success(
+                    request,
+                    f"Turma '{codigo}' da disciplina '{disciplina.nome}' criada com sucesso!",
+                )
             except Exception as e:
                 messages.error(request, f"Erro ao criar turma: {str(e)}")
-                
+
         # Update existing class
-        elif action == 'update':
-            turma_id = request.POST.get('turma_id')
-            codigo = request.POST.get('codigo')
-            disciplina_id = request.POST.get('disciplina')
-            professor_id = request.POST.get('professor')
-            semestre_id = request.POST.get('semestre')
-            
+        elif action == "update":
+            turma_id = request.POST.get("turma_id")
+            codigo = request.POST.get("codigo")
+            disciplina_id = request.POST.get("disciplina")
+            professor_id = request.POST.get("professor")
+            semestre_id = request.POST.get("semestre")
+
             if not all([turma_id, codigo, disciplina_id, professor_id, semestre_id]):
                 messages.error(request, "Todos os campos são obrigatórios.")
-                return redirect('admin_classes')
-            
+                return redirect("admin_classes")
+
             try:
                 # Get the class and related objects
                 turma = get_object_or_404(Turma, id=turma_id)
                 disciplina = get_object_or_404(Disciplina, id=disciplina_id)
                 professor = get_object_or_404(Professor, idProfessor=professor_id)
                 semestre = get_object_or_404(Semestre, id=semestre_id)
-                
+
                 # Check if another class with the same code, discipline and semester already exists
-                if Turma.objects.filter(codigo=codigo, disciplina=disciplina, semestre=semestre).exclude(id=turma_id).exists():
-                    messages.error(request, f"Já existe outra turma com código '{codigo}' para esta disciplina neste semestre.")
-                    return redirect('admin_classes')
-                
+                if (
+                    Turma.objects.filter(
+                        codigo=codigo, disciplina=disciplina, semestre=semestre
+                    )
+                    .exclude(id=turma_id)
+                    .exists()
+                ):
+                    messages.error(
+                        request,
+                        f"Já existe outra turma com código '{codigo}' para esta disciplina neste semestre.",
+                    )
+                    return redirect("admin_classes")
+
                 # Update the class
                 turma.codigo = codigo
                 turma.disciplina = disciplina
                 turma.professor = professor
                 turma.semestre = semestre
                 turma.save()
-                
+
                 messages.success(request, f"Turma atualizada com sucesso!")
             except Exception as e:
                 messages.error(request, f"Erro ao atualizar turma: {str(e)}")
-                
+
         # Delete class
-        elif action == 'delete':
-            turma_id = request.POST.get('turma_id')
-            
+        elif action == "delete":
+            turma_id = request.POST.get("turma_id")
+
             if not turma_id:
                 messages.error(request, "ID da turma é obrigatório.")
-                return redirect('admin_classes')
-            
+                return redirect("admin_classes")
+
             try:
                 turma = get_object_or_404(Turma, id=turma_id)
-                
+
                 # Check if class has activities
                 if Atividade.objects.filter(turma=turma).exists():
-                    messages.error(request, f"Não é possível excluir a turma pois existem atividades associadas a ela.")
-                    return redirect('admin_classes')
-                
+                    messages.error(
+                        request,
+                        f"Não é possível excluir a turma pois existem atividades associadas a ela.",
+                    )
+                    return redirect("admin_classes")
+
                 # Check if class has students
                 if TurmaAluno.objects.filter(turma=turma).exists():
-                    messages.error(request, f"Não é possível excluir a turma pois existem alunos matriculados.")
-                    return redirect('admin_classes')
-                
+                    messages.error(
+                        request,
+                        f"Não é possível excluir a turma pois existem alunos matriculados.",
+                    )
+                    return redirect("admin_classes")
+
                 disciplina_nome = turma.disciplina.nome
                 codigo = turma.codigo
                 turma.delete()
-                
-                messages.success(request, f"Turma '{codigo}' da disciplina '{disciplina_nome}' excluída com sucesso!")
+
+                messages.success(
+                    request,
+                    f"Turma '{codigo}' da disciplina '{disciplina_nome}' excluída com sucesso!",
+                )
             except Exception as e:
                 messages.error(request, f"Erro ao excluir turma: {str(e)}")
-    
+
     # Get all classes, disciplines, professors and semesters
-    turmas = Turma.objects.all().select_related('disciplina', 'professor', 'semestre')
-    disciplinas = Disciplina.objects.all().order_by('nome')
-    professores = Professor.objects.all().order_by('nomeProf')
-    semestres = Semestre.objects.all().order_by('-ano', '-periodo')
-    
+    turmas = Turma.objects.all().select_related("disciplina", "professor", "semestre")
+    disciplinas = Disciplina.objects.all().order_by("nome")
+    professores = Professor.objects.all().order_by("nomeProf")
+    semestres = Semestre.objects.all().order_by("-ano", "-periodo")
+
     context = {
-        'turmas': turmas,
-        'disciplinas': disciplinas,
-        'professores': professores,
-        'semestres': semestres,
-        'user_type': 'admin',
-        'username': request.session.get('username')
+        "turmas": turmas,
+        "disciplinas": disciplinas,
+        "professores": professores,
+        "semestres": semestres,
+        "user_type": "admin",
+        "username": request.session.get("username"),
     }
-    
-    return render(request, 'admin/classes.html', context)
+
+    return render(request, "admin/classes.html", context)
+
 
 @login_required_custom
 def admin_class_students(request, turma_id):
     """View for managing students in a class"""
     # Ensure user has permission (admin or professor)
-    user_type = request.session.get('user_type')
-    user_id = request.session.get('user_id')
-    
-    if user_type not in ['admin', 'professor']:
-        messages.error(request, 'Acesso negado. Você não tem permissão para gerenciar alunos de turmas.')
-        return redirect('home')
-    
+    user_type = request.session.get("user_type")
+    user_id = request.session.get("user_id")
+
+    if user_type not in ["admin", "professor"]:
+        messages.error(
+            request,
+            "Acesso negado. Você não tem permissão para gerenciar alunos de turmas.",
+        )
+        return redirect("home")
+
     turma = get_object_or_404(Turma, id=turma_id)
-    
+
     # If professor, check if they're teaching this class
-    if user_type == 'professor' and turma.professor.idProfessor != user_id:
-        messages.error(request, 'Você não tem permissão para gerenciar alunos desta turma.')
-        return redirect('home')
-    
+    if user_type == "professor" and turma.professor.idProfessor != user_id:
+        messages.error(
+            request, "Você não tem permissão para gerenciar alunos desta turma."
+        )
+        return redirect("home")
+
     # Handle form actions
-    if request.method == 'POST':
-        action = request.POST.get('action')
-        
+    if request.method == "POST":
+        action = request.POST.get("action")
+
         # Add single student
-        if action == 'add_student':
-            aluno_id = request.POST.get('aluno_id')
-            
+        if action == "add_student":
+            aluno_id = request.POST.get("aluno_id")
+
             if not aluno_id:
                 messages.error(request, "ID do aluno é obrigatório.")
-                return redirect('admin_class_students', turma_id=turma_id)
-            
+                return redirect("admin_class_students", turma_id=turma_id)
+
             try:
                 aluno = get_object_or_404(Aluno, idAluno=aluno_id)
-                
+
                 # Check if student is already enrolled
                 if TurmaAluno.objects.filter(turma=turma, aluno=aluno).exists():
-                    messages.warning(request, f"O aluno {aluno.nomeAluno} já está matriculado nesta turma.")
+                    messages.warning(
+                        request,
+                        f"O aluno {aluno.nomeAluno} já está matriculado nesta turma.",
+                    )
                 else:
                     TurmaAluno.objects.create(turma=turma, aluno=aluno)
-                    messages.success(request, f"Aluno {aluno.nomeAluno} adicionado à turma com sucesso.")
+                    messages.success(
+                        request,
+                        f"Aluno {aluno.nomeAluno} adicionado à turma com sucesso.",
+                    )
             except Aluno.DoesNotExist:
                 messages.error(request, f"Aluno com ID {aluno_id} não encontrado.")
-                
+
         # Add multiple students
-        elif action == 'add_multiple':
-            alunos_ids = request.POST.getlist('alunos')
-            
+        elif action == "add_multiple":
+            alunos_ids = request.POST.getlist("alunos")
+
             if not alunos_ids:
                 messages.error(request, "Selecione pelo menos um aluno.")
-                return redirect('admin_class_students', turma_id=turma_id)
-            
+                return redirect("admin_class_students", turma_id=turma_id)
+
             count = 0
             for aluno_id in alunos_ids:
                 try:
@@ -2200,110 +2533,136 @@ def admin_class_students(request, turma_id):
                         count += 1
                 except:
                     pass
-            
+
             if count > 0:
-                messages.success(request, f"{count} alunos adicionados à turma com sucesso.")
+                messages.success(
+                    request, f"{count} alunos adicionados à turma com sucesso."
+                )
             else:
                 messages.warning(request, "Nenhum aluno novo foi adicionado à turma.")
-                
+
         # Remove student
-        elif action == 'remove_student':
-            matricula_id = request.POST.get('matricula_id')
-            
+        elif action == "remove_student":
+            matricula_id = request.POST.get("matricula_id")
+
             if not matricula_id:
                 messages.error(request, "ID da matrícula é obrigatório.")
-                return redirect('admin_class_students', turma_id=turma_id)
-            
+                return redirect("admin_class_students", turma_id=turma_id)
+
             try:
                 matricula = get_object_or_404(TurmaAluno, id=matricula_id)
                 nome_aluno = matricula.aluno.nomeAluno
-                
+
                 # Check if student is in groups for this class
                 atividades = Atividade.objects.filter(turma=turma)
-                grupos = Grupo.objects.filter(atividade__in=atividades, alunos=matricula.aluno)
-                
+                grupos = Grupo.objects.filter(
+                    atividade__in=atividades, alunos=matricula.aluno
+                )
+
                 if grupos.exists():
-                    messages.error(request, f"Não é possível remover o aluno {nome_aluno} pois ele está em grupos nesta turma.")
-                    return redirect('admin_class_students', turma_id=turma_id)
-                
+                    messages.error(
+                        request,
+                        f"Não é possível remover o aluno {nome_aluno} pois ele está em grupos nesta turma.",
+                    )
+                    return redirect("admin_class_students", turma_id=turma_id)
+
                 matricula.delete()
-                messages.success(request, f"Aluno {nome_aluno} removido da turma com sucesso.")
+                messages.success(
+                    request, f"Aluno {nome_aluno} removido da turma com sucesso."
+                )
             except Exception as e:
                 messages.error(request, f"Erro ao remover aluno: {str(e)}")
-    
+
     # Get enrolled students and available students
-    matriculas = TurmaAluno.objects.filter(turma=turma).select_related('aluno', 'aluno__curso')
-    
+    matriculas = TurmaAluno.objects.filter(turma=turma).select_related(
+        "aluno", "aluno__curso"
+    )
+
     # Get list of student IDs already enrolled
-    alunos_matriculados_ids = matriculas.values_list('aluno__idAluno', flat=True)
-    
+    alunos_matriculados_ids = matriculas.values_list("aluno__idAluno", flat=True)
+
     # Get available students (not enrolled in this class)
-    alunos_disponiveis = Aluno.objects.exclude(idAluno__in=alunos_matriculados_ids).select_related('curso')
-    
+    alunos_disponiveis = Aluno.objects.exclude(
+        idAluno__in=alunos_matriculados_ids
+    ).select_related("curso")
+
     context = {
-        'turma': turma,
-        'matriculas': matriculas,
-        'alunos_disponiveis': alunos_disponiveis,
-        'user_type': user_type,
-        'username': request.session.get('username')
+        "turma": turma,
+        "matriculas": matriculas,
+        "alunos_disponiveis": alunos_disponiveis,
+        "user_type": user_type,
+        "username": request.session.get("username"),
     }
-    
-    return render(request, 'admin/class_students.html', context)
+
+    return render(request, "admin/class_students.html", context)
+
 
 @login_required_custom
 def admin_semesters(request):
     """View for managing semesters in the admin dashboard"""
     # Ensure user is admin
-    if request.session.get('user_type') != 'admin':
-        messages.error(request, 'Acesso negado. Você não é um administrador.')
-        return redirect('home')
-    
+    if request.session.get("user_type") != "admin":
+        messages.error(request, "Acesso negado. Você não é um administrador.")
+        return redirect("home")
+
     # Get current year for the default value in the create form
     current_year = timezone.now().year
-    
+
     # Handle form actions
-    if request.method == 'POST':
-        action = request.POST.get('action')
-        
+    if request.method == "POST":
+        action = request.POST.get("action")
+
         # Create new semester
-        if action == 'create':
-            ano = request.POST.get('ano')
-            periodo = request.POST.get('periodo')
-            
+        if action == "create":
+            ano = request.POST.get("ano")
+            periodo = request.POST.get("periodo")
+
             if ano and periodo:
                 try:
                     ano = int(ano)
                     periodo = int(periodo)
-                    
+
                     # Validate period value (1 or 2)
                     if periodo not in [1, 2]:
-                        messages.error(request, "O período deve ser 1 (primeiro semestre) ou 2 (segundo semestre).")
-                        return redirect('admin_semesters')
-                    
+                        messages.error(
+                            request,
+                            "O período deve ser 1 (primeiro semestre) ou 2 (segundo semestre).",
+                        )
+                        return redirect("admin_semesters")
+
                     # Check if semester already exists
                     if Semestre.objects.filter(ano=ano, periodo=periodo).exists():
-                        messages.error(request, f"O semestre {ano}/{periodo} já existe.")
+                        messages.error(
+                            request, f"O semestre {ano}/{periodo} já existe."
+                        )
                     else:
                         Semestre.objects.create(ano=ano, periodo=periodo)
-                        messages.success(request, f"Semestre {ano}/{periodo} criado com sucesso!")
+                        messages.success(
+                            request, f"Semestre {ano}/{periodo} criado com sucesso!"
+                        )
                 except ValueError:
-                    messages.error(request, "Ano e período devem ser valores numéricos.")
+                    messages.error(
+                        request, "Ano e período devem ser valores numéricos."
+                    )
             else:
                 messages.error(request, "Ano e período são obrigatórios.")
-        
+
         # Delete semester
-        elif action == 'delete':
-            semestre_id = request.POST.get('semestre_id')
-            
+        elif action == "delete":
+            semestre_id = request.POST.get("semestre_id")
+
             if semestre_id:
                 try:
                     semestre = get_object_or_404(Semestre, id=semestre_id)
-                    
+
                     # Check if semester has turmas
                     if semestre.turmas.exists():
-                        messages.error(request, f"Não é possível excluir o semestre {semestre} pois existem turmas associadas.")
-                        return redirect('admin_semesters')
-                    
+                        messages.error(
+                            request,
+                            f"Não é possível excluir o semestre {semestre} pois existem turmas associadas.",
+                        )
+                        return redirect("admin_semesters")
+
                     nome = str(semestre)
                     semestre.delete()
                     messages.success(request, f"Semestre {nome} excluído com sucesso!")
@@ -2311,462 +2670,504 @@ def admin_semesters(request):
                     messages.error(request, f"Erro ao excluir semestre: {str(e)}")
             else:
                 messages.error(request, "ID do semestre é obrigatório.")
-    
+
     # Get all semesters ordered by year and period
-    semestres = Semestre.objects.all().order_by('-ano', '-periodo')
-    
+    semestres = Semestre.objects.all().order_by("-ano", "-periodo")
+
     context = {
-        'semestres': semestres,
-        'current_year': current_year,
-        'user_type': 'admin',
-        'username': request.session.get('username')
+        "semestres": semestres,
+        "current_year": current_year,
+        "user_type": "admin",
+        "username": request.session.get("username"),
     }
-    
-    return render(request, 'admin/semesters.html', context)
+
+    return render(request, "admin/semesters.html", context)
+
 
 @login_required_custom
 def debug_auth(request):
     """View for debugging authentication and password management (admin only)"""
     # Ensure user is admin
-    if request.session.get('user_type') != 'admin':
-        messages.error(request, 'Acesso negado. Você não é um administrador.')
-        return redirect('home')
-    
+    if request.session.get("user_type") != "admin":
+        messages.error(request, "Acesso negado. Você não é um administrador.")
+        return redirect("home")
+
     from .models import Admin
     from .utils import generate_token, enviar_email_redefinicao_senha
-    
+
     reset_link = None
-    
-    if request.method == 'POST':
-        action = request.POST.get('action')
-        
+
+    if request.method == "POST":
+        action = request.POST.get("action")
+
         # Reset a user's password directly
-        if action == 'reset_password':
-            email = request.POST.get('email')
-            password = request.POST.get('password', '123456')  # Default to 123456 if not provided
-            user_role = request.POST.get('user_role')
-            
+        if action == "reset_password":
+            email = request.POST.get("email")
+            password = request.POST.get(
+                "password", "123456"
+            )  # Default to 123456 if not provided
+            user_role = request.POST.get("user_role")
+
             if not email or not user_role:
                 messages.error(request, "Email e tipo de usuário são obrigatórios.")
-                return redirect('debug_auth')
-            
+                return redirect("debug_auth")
+
             try:
                 # Find the user and reset their password
                 user = None
-                if user_role == 'aluno':
+                if user_role == "aluno":
                     user = Aluno.objects.get(emailAluno=email)
                     user.senhaAluno = hash_password(password)
-                elif user_role == 'professor':
+                elif user_role == "professor":
                     user = Professor.objects.get(emailProf=email)
                     user.senhaProf = hash_password(password)
-                elif user_role == 'coordenador':
+                elif user_role == "coordenador":
                     user = Coordenador.objects.get(emailCoord=email)
                     user.senhaCoord = hash_password(password)
-                elif user_role == 'admin':
+                elif user_role == "admin":
                     user = Admin.objects.get(emailAdmin=email)
                     user.senhaAdmin = hash_password(password)
-                
+
                 if user:
                     user.save()
-                    messages.success(request, f"Senha do usuário {email} redefinida para: {password}")
+                    messages.success(
+                        request, f"Senha do usuário {email} redefinida para: {password}"
+                    )
                 else:
-                    messages.error(request, f"Usuário {email} não encontrado como {user_role}.")
+                    messages.error(
+                        request, f"Usuário {email} não encontrado como {user_role}."
+                    )
             except Exception as e:
                 messages.error(request, f"Erro ao redefinir senha: {str(e)}")
-        
+
         # Generate a password reset link
-        elif action == 'generate_reset_link':
-            email = request.POST.get('reset_email')
-            
+        elif action == "generate_reset_link":
+            email = request.POST.get("reset_email")
+
             if not email:
                 messages.error(request, "Email é obrigatório.")
-                return redirect('debug_auth')
-            
+                return redirect("debug_auth")
+
             # Try to find the user in each user type
             user = None
             user_type = None
-            
+
             if Aluno.objects.filter(emailAluno=email).exists():
                 user = Aluno.objects.get(emailAluno=email)
-                user_type = 'aluno'
+                user_type = "aluno"
             elif Professor.objects.filter(emailProf=email).exists():
                 user = Professor.objects.get(emailProf=email)
-                user_type = 'professor'
+                user_type = "professor"
             elif Coordenador.objects.filter(emailCoord=email).exists():
                 user = Coordenador.objects.get(emailCoord=email)
-                user_type = 'coordenador'
+                user_type = "coordenador"
             elif Admin.objects.filter(emailAdmin=email).exists():
                 user = Admin.objects.get(emailAdmin=email)
-                user_type = 'admin'
-            
+                user_type = "admin"
+
             if user:
                 # Generate token and create reset URL
                 token = generate_token()
-                
+
                 # Save token to user
-                if user_type == 'aluno':
+                if user_type == "aluno":
                     user.reset_token = token
-                elif user_type == 'professor':
+                elif user_type == "professor":
                     user.reset_token = token
-                elif user_type == 'coordenador':
+                elif user_type == "coordenador":
                     user.reset_token = token
-                elif user_type == 'admin':
+                elif user_type == "admin":
                     user.reset_token = token
-                
+
                 user.save()
-                
+
                 # Generate the reset URL
                 reset_url = request.build_absolute_uri(
-                    reverse('reset_password_confirm', kwargs={'token': token})
+                    reverse("reset_password_confirm", kwargs={"token": token})
                 )
-                
+
                 reset_link = reset_url
-                messages.success(request, f"Link de redefinição gerado para {email} ({user_type}).")
+                messages.success(
+                    request, f"Link de redefinição gerado para {email} ({user_type})."
+                )
             else:
                 messages.error(request, f"Usuário com email {email} não encontrado.")
-    
+
     # Get sample users for display
     samples = []
-    
+
     # Get a few users of each type
     for aluno in Aluno.objects.all()[:3]:
-        samples.append({
-            'type': 'aluno',
-            'name': aluno.nomeAluno,
-            'email': aluno.emailAluno,
-            'password_hash': aluno.senhaAluno[:20] + '...',
-            'id': aluno.idAluno
-        })
-    
+        samples.append(
+            {
+                "type": "aluno",
+                "name": aluno.nomeAluno,
+                "email": aluno.emailAluno,
+                "password_hash": aluno.senhaAluno[:20] + "...",
+                "id": aluno.idAluno,
+            }
+        )
+
     for professor in Professor.objects.all()[:3]:
-        samples.append({
-            'type': 'professor',
-            'name': professor.nomeProf,
-            'email': professor.emailProf,
-            'password_hash': professor.senhaProf[:20] + '...',
-            'id': professor.idProfessor
-        })
-    
+        samples.append(
+            {
+                "type": "professor",
+                "name": professor.nomeProf,
+                "email": professor.emailProf,
+                "password_hash": professor.senhaProf[:20] + "...",
+                "id": professor.idProfessor,
+            }
+        )
+
     for coordenador in Coordenador.objects.all()[:2]:
-        samples.append({
-            'type': 'coordenador',
-            'name': coordenador.nomeCoord,
-            'email': coordenador.emailCoord,
-            'password_hash': coordenador.senhaCoord[:20] + '...',
-            'id': coordenador.id
-        })
-    
+        samples.append(
+            {
+                "type": "coordenador",
+                "name": coordenador.nomeCoord,
+                "email": coordenador.emailCoord,
+                "password_hash": coordenador.senhaCoord[:20] + "...",
+                "id": coordenador.id,
+            }
+        )
+
     for admin in Admin.objects.all()[:2]:
-        samples.append({
-            'type': 'admin',
-            'name': admin.nomeAdmin,
-            'email': admin.emailAdmin,
-            'password_hash': admin.senhaAdmin[:20] + '...',
-            'id': admin.id
-        })
-    
+        samples.append(
+            {
+                "type": "admin",
+                "name": admin.nomeAdmin,
+                "email": admin.emailAdmin,
+                "password_hash": admin.senhaAdmin[:20] + "...",
+                "id": admin.id,
+            }
+        )
+
     context = {
-        'samples': samples,
-        'reset_link': reset_link,
-        'user_type': 'admin',
-        'username': request.session.get('username')
+        "samples": samples,
+        "reset_link": reset_link,
+        "user_type": "admin",
+        "username": request.session.get("username"),
     }
-    
-    return render(request, 'admin/debug_auth.html', context)
+
+    return render(request, "admin/debug_auth.html", context)
+
 
 @login_required_custom
 def notificacoes(request):
     """View for displaying all notifications for a user"""
-    user_type = request.session.get('user_type')
-    user_id = request.session.get('user_id')
-    
+    user_type = request.session.get("user_type")
+    user_id = request.session.get("user_id")
+
     # Get all notifications for the current user
     from .utils import obter_notificacoes_usuario
-    notificacoes = obter_notificacoes_usuario(request).order_by('-data_criacao')
-    
+
+    notificacoes = obter_notificacoes_usuario(request).order_by("-data_criacao")
+
     # Count unread notifications
     nao_lidas = notificacoes.filter(lida=False).count()
-    
+
     # Handle marking all as read
-    if request.method == 'POST' and 'marcar_todas_como_lidas' in request.POST:
+    if request.method == "POST" and "marcar_todas_como_lidas" in request.POST:
         notificacoes.filter(lida=False).update(lida=True)
         messages.success(request, "Todas as notificações foram marcadas como lidas.")
-        return redirect('notificacoes')
-    
+        return redirect("notificacoes")
+
     context = {
-        'notificacoes': notificacoes,
-        'nao_lidas': nao_lidas,
-        'user_type': user_type,
-        'username': request.session.get('username')
+        "notificacoes": notificacoes,
+        "nao_lidas": nao_lidas,
+        "user_type": user_type,
+        "username": request.session.get("username"),
     }
-    
-    return render(request, 'notificacoes.html', context)
+
+    return render(request, "notificacoes.html", context)
+
 
 @login_required_custom
 def marcar_notificacao_como_lida(request, notificacao_id):
     """View for marking a notification as read"""
-    user_type = request.session.get('user_type')
-    user_id = request.session.get('user_id')
-    
+    user_type = request.session.get("user_type")
+    user_id = request.session.get("user_id")
+
     # Get notification and check if it belongs to this user
     notificacao = get_object_or_404(Notificacao, id=notificacao_id)
-    
+
     # Check if this notification belongs to the current user
-    if ((user_type == 'aluno' and notificacao.aluno_id == user_id) or 
-        (user_type == 'professor' and notificacao.professor_id == user_id) or
-        (user_type == 'coordenador' and notificacao.coordenador_id == user_id) or
-        (user_type == 'admin' and notificacao.admin_id == user_id)):
-        
+    if (
+        (user_type == "aluno" and notificacao.aluno_id == user_id)
+        or (user_type == "professor" and notificacao.professor_id == user_id)
+        or (user_type == "coordenador" and notificacao.coordenador_id == user_id)
+        or (user_type == "admin" and notificacao.admin_id == user_id)
+    ):
         notificacao.lida = True
         notificacao.save()
-        
+
         # If there's a link, redirect to it
         if notificacao.link:
             return redirect(notificacao.link)
-    
+
     # Redirect back to notifications page
-    return redirect('notificacoes')
+    return redirect("notificacoes")
+
 
 @login_required_custom
 def excluir_notificacao(request, notificacao_id):
     """View for deleting a notification"""
-    if request.method != 'POST':
-        return redirect('notificacoes')
-    
-    user_type = request.session.get('user_type')
-    user_id = request.session.get('user_id')
-    
+    if request.method != "POST":
+        return redirect("notificacoes")
+
+    user_type = request.session.get("user_type")
+    user_id = request.session.get("user_id")
+
     # Get notification and check if it belongs to this user
     notificacao = get_object_or_404(Notificacao, id=notificacao_id)
-    
+
     # Check if this notification belongs to the current user
-    if ((user_type == 'aluno' and notificacao.aluno_id == user_id) or 
-        (user_type == 'professor' and notificacao.professor_id == user_id) or
-        (user_type == 'coordenador' and notificacao.coordenador_id == user_id) or
-        (user_type == 'admin' and notificacao.admin_id == user_id)):
-        
+    if (
+        (user_type == "aluno" and notificacao.aluno_id == user_id)
+        or (user_type == "professor" and notificacao.professor_id == user_id)
+        or (user_type == "coordenador" and notificacao.coordenador_id == user_id)
+        or (user_type == "admin" and notificacao.admin_id == user_id)
+    ):
         notificacao.delete()
         messages.success(request, "Notificação excluída com sucesso.")
     else:
         messages.error(request, "Você não tem permissão para excluir esta notificação.")
-    
-    return redirect('notificacoes')
+
+    return redirect("notificacoes")
 
 
 # New views for professor grades interface
 @login_required_custom
 def notas_professor_disciplinas(request):
     """View for professor to select a discipline to view grades"""
-    user_type = request.session.get('user_type')
-    user_id = request.session.get('user_id')
-    
-    if user_type != 'professor':
-        messages.error(request, "Acesso negado. Apenas professores podem acessar esta página.")
-        return redirect('home')
-    
+    user_type = request.session.get("user_type")
+    user_id = request.session.get("user_id")
+
+    if user_type != "professor":
+        messages.error(
+            request, "Acesso negado. Apenas professores podem acessar esta página."
+        )
+        return redirect("home")
+
     professor = Professor.objects.get(idProfessor=user_id)
-    disciplinas = Disciplina.objects.filter(
-        turmas__professor=professor
-    ).distinct().order_by('nome')
+    disciplinas = (
+        Disciplina.objects.filter(turmas__professor=professor)
+        .distinct()
+        .order_by("nome")
+    )
 
     # Debug logging to help diagnose cases where a professor sees no disciplinas
     logger = logging.getLogger(__name__)
     try:
-        logger.info(f"notas_professor_disciplinas: professor id={professor.idProfessor} nome={professor.nomeProf} -> disciplinas_count={disciplinas.count()}")
+        logger.info(
+            f"notas_professor_disciplinas: professor id={professor.idProfessor} nome={professor.nomeProf} -> disciplinas_count={disciplinas.count()}"
+        )
     except Exception:
-        logger.info("notas_professor_disciplinas: unable to log professor/disciplina info")
-    
-    return render(request, 'notas_professor_disciplinas.html', {
-        'disciplinas': disciplinas,
-        'user_type': user_type,
-        'username': request.session.get('username'),
-        # debug context to help diagnose empty results
-        'debug_professor_id': getattr(professor, 'idProfessor', None),
-        'debug_disciplinas_count': disciplinas.count()
-    })
+        logger.info(
+            "notas_professor_disciplinas: unable to log professor/disciplina info"
+        )
+
+    return render(
+        request,
+        "notas_professor_disciplinas.html",
+        {
+            "disciplinas": disciplinas,
+            "user_type": user_type,
+            "username": request.session.get("username"),
+            # debug context to help diagnose empty results
+            "debug_professor_id": getattr(professor, "idProfessor", None),
+            "debug_disciplinas_count": disciplinas.count(),
+        },
+    )
 
 
-@login_required_custom 
+@login_required_custom
 def notas_professor_turmas(request, disciplina_id):
     """View for professor to select a class within a discipline"""
-    user_type = request.session.get('user_type')
-    user_id = request.session.get('user_id')
-    
-    if user_type != 'professor':
-        messages.error(request, "Acesso negado. Apenas professores podem acessar esta página.")
-        return redirect('home')
-    
+    user_type = request.session.get("user_type")
+    user_id = request.session.get("user_id")
+
+    if user_type != "professor":
+        messages.error(
+            request, "Acesso negado. Apenas professores podem acessar esta página."
+        )
+        return redirect("home")
+
     professor = Professor.objects.get(idProfessor=user_id)
     disciplina = get_object_or_404(Disciplina, id=disciplina_id)
-    
+
     # Verify that this professor teaches this discipline
-    turmas = Turma.objects.filter(professor=professor, disciplina=disciplina).order_by('codigo')
-    
+    turmas = Turma.objects.filter(professor=professor, disciplina=disciplina).order_by(
+        "codigo"
+    )
+
     if not turmas.exists():
         messages.error(request, "Você não leciona esta disciplina.")
-        return redirect('notas_professor_disciplinas')
-    
-    return render(request, 'notas_professor_turmas.html', {
-        'disciplina': disciplina,
-        'turmas': turmas,
-        'user_type': user_type,
-        'username': request.session.get('username')
-    })
+        return redirect("notas_professor_disciplinas")
+
+    return render(
+        request,
+        "notas_professor_turmas.html",
+        {
+            "disciplina": disciplina,
+            "turmas": turmas,
+            "user_type": user_type,
+            "username": request.session.get("username"),
+        },
+    )
 
 
 @login_required_custom
 def notas_turma_geral(request, turma_id):
     """View for professor to see class overview with statistics"""
-    user_type = request.session.get('user_type')
-    user_id = request.session.get('user_id')
-    
-    if user_type != 'professor':
-        messages.error(request, "Acesso negado. Apenas professores podem acessar esta página.")
-        return redirect('home')
-    
+    user_type = request.session.get("user_type")
+    user_id = request.session.get("user_id")
+
+    if user_type != "professor":
+        messages.error(
+            request, "Acesso negado. Apenas professores podem acessar esta página."
+        )
+        return redirect("home")
+
     professor = Professor.objects.get(idProfessor=user_id)
     turma = get_object_or_404(Turma, id=turma_id)
-    
+
     # Verify that this professor teaches this class
     if turma.professor != professor:
         messages.error(request, "Você não leciona esta turma.")
-        return redirect('notas_professor_disciplinas')
-    
+        return redirect("notas_professor_disciplinas")
+
     # Get students in this class
-    matriculas = TurmaAluno.objects.filter(turma=turma).select_related('aluno')
+    matriculas = TurmaAluno.objects.filter(turma=turma).select_related("aluno")
     alunos = [m.aluno for m in matriculas]
-    
+
     # Get activities for this class
     atividades = Atividade.objects.filter(turma=turma)
-    
+
     # Get completed evaluations for this class
-    avaliacoes = Avaliacao.objects.filter(
-        atividade__in=atividades,
-        concluida=True
-    )
-    
+    avaliacoes = Avaliacao.objects.filter(atividade__in=atividades, concluida=True)
+
     # Get all notes for this class
     notas = Nota.objects.filter(avaliacao__in=avaliacoes).select_related(
-        'competencia', 'avaliacao', 'avaliacao__avaliado_aluno'
+        "competencia", "avaliacao", "avaliacao__avaliado_aluno"
     )
-    
+
     # Calculate overall class statistics by competency
     competencias = Competencia.objects.all()
     estatisticas_competencias = {}
-    
+
     for competencia in competencias:
         notas_competencia = notas.filter(competencia=competencia)
         if notas_competencia.exists():
-            media = notas_competencia.aggregate(Avg('nota'))['nota__avg']
+            media = notas_competencia.aggregate(Avg("nota"))["nota__avg"]
             estatisticas_competencias[competencia.nome] = round(media, 2)
         else:
             estatisticas_competencias[competencia.nome] = 0
-    
+
     # Prepare chart data for competencies
     chart_data = {
-        'labels': list(estatisticas_competencias.keys()),
-        'data': list(estatisticas_competencias.values())
+        "labels": list(estatisticas_competencias.keys()),
+        "data": list(estatisticas_competencias.values()),
     }
-    
+
     context = {
-        'turma': turma,
-        'alunos': alunos,
-        'num_alunos': len(alunos),
-        'num_atividades': atividades.count(),
-        'estatisticas_competencias': estatisticas_competencias,
-        'chart_data': json.dumps(chart_data),
-        'user_type': user_type,
-        'username': request.session.get('username')
+        "turma": turma,
+        "alunos": alunos,
+        "num_alunos": len(alunos),
+        "num_atividades": atividades.count(),
+        "estatisticas_competencias": estatisticas_competencias,
+        "chart_data": json.dumps(chart_data),
+        "user_type": user_type,
+        "username": request.session.get("username"),
     }
-    
-    return render(request, 'notas_turma_geral.html', context)
+
+    return render(request, "notas_turma_geral.html", context)
 
 
 @login_required_custom
 def notas_aluno_individual(request, turma_id, aluno_id):
     """View for professor to see individual student grades"""
-    user_type = request.session.get('user_type')
-    user_id = request.session.get('user_id')
-    
-    if user_type != 'professor':
-        messages.error(request, "Acesso negado. Apenas professores podem acessar esta página.")
-        return redirect('home')
-    
+    user_type = request.session.get("user_type")
+    user_id = request.session.get("user_id")
+
+    if user_type != "professor":
+        messages.error(
+            request, "Acesso negado. Apenas professores podem acessar esta página."
+        )
+        return redirect("home")
+
     professor = Professor.objects.get(idProfessor=user_id)
     turma = get_object_or_404(Turma, id=turma_id)
     aluno = get_object_or_404(Aluno, idAluno=aluno_id)
-    
+
     # Verify that this professor teaches this class
     if turma.professor != professor:
         messages.error(request, "Você não leciona esta turma.")
-        return redirect('notas_professor_disciplinas')
-    
+        return redirect("notas_professor_disciplinas")
+
     # Verify that this student is in this class
     if not TurmaAluno.objects.filter(turma=turma, aluno=aluno).exists():
         messages.error(request, "Este aluno não está matriculado nesta turma.")
-        return redirect('notas_turma_geral', turma_id=turma_id)
-    
+        return redirect("notas_turma_geral", turma_id=turma_id)
+
     # Get activities for this class
     atividades = Atividade.objects.filter(turma=turma)
-    
+
     # Get all evaluations received by this student in this class
     avaliacoes = Avaliacao.objects.filter(
-        atividade__in=atividades,
-        avaliado_aluno=aluno,
-        concluida=True
+        atividade__in=atividades, avaliado_aluno=aluno, concluida=True
     )
-    
+
     # Separate self-assessments from peer evaluations
     auto_avaliacoes = avaliacoes.filter(is_self_assessment=True)
     avaliacoes_pares = avaliacoes.filter(is_self_assessment=False)
-    
+
     # Get notes from these evaluations
     notas_auto = Nota.objects.filter(avaliacao__in=auto_avaliacoes).select_related(
-        'competencia', 'avaliacao', 'avaliacao__atividade'
+        "competencia", "avaliacao", "avaliacao__atividade"
     )
     notas_pares = Nota.objects.filter(avaliacao__in=avaliacoes_pares).select_related(
-        'competencia', 'avaliacao', 'avaliacao__atividade'
+        "competencia", "avaliacao", "avaliacao__atividade"
     )
-    
+
     # All notes for chart calculations
     notas = Nota.objects.filter(avaliacao__in=avaliacoes).select_related(
-        'competencia', 'avaliacao', 'avaliacao__atividade'
+        "competencia", "avaliacao", "avaliacao__atividade"
     )
-    
+
     # Calculate statistics by competency - separated by type
     competencias = Competencia.objects.all()
     radar_data = {
-        'labels': [c.nome for c in competencias],
-        'media_geral': [],
-        'auto_avaliacao': []
+        "labels": [c.nome for c in competencias],
+        "media_geral": [],
+        "auto_avaliacao": [],
     }
-    
+
     for competencia in competencias:
         # Overall average (all evaluations)
         notas_comp_geral = notas.filter(competencia=competencia)
         if notas_comp_geral.exists():
-            media_geral = notas_comp_geral.aggregate(Avg('nota'))['nota__avg']
-            radar_data['media_geral'].append(float(media_geral))
+            media_geral = notas_comp_geral.aggregate(Avg("nota"))["nota__avg"]
+            radar_data["media_geral"].append(float(media_geral))
         else:
-            radar_data['media_geral'].append(0)
-        
+            radar_data["media_geral"].append(0)
+
         # Self-assessment average
         notas_comp_auto = notas_auto.filter(competencia=competencia)
         if notas_comp_auto.exists():
-            media_auto = notas_comp_auto.aggregate(Avg('nota'))['nota__avg']
-            radar_data['auto_avaliacao'].append(float(media_auto))
+            media_auto = notas_comp_auto.aggregate(Avg("nota"))["nota__avg"]
+            radar_data["auto_avaliacao"].append(float(media_auto))
         else:
-            radar_data['auto_avaliacao'].append(0)
-    
+            radar_data["auto_avaliacao"].append(0)
+
     context = {
-        'turma': turma,
-        'aluno': aluno,
-        'notas': notas,
-        'notas_auto': notas_auto,
-        'notas_pares': notas_pares,
-        'radar_data': json.dumps(radar_data),
-        'user_type': user_type,
-        'username': request.session.get('username')
+        "turma": turma,
+        "aluno": aluno,
+        "notas": notas,
+        "notas_auto": notas_auto,
+        "notas_pares": notas_pares,
+        "radar_data": json.dumps(radar_data),
+        "user_type": user_type,
+        "username": request.session.get("username"),
     }
-    
-    return render(request, 'notas_aluno_individual.html', context)
+
+    return render(request, "notas_aluno_individual.html", context)
